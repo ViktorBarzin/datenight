@@ -157,6 +157,7 @@ export function ideaFacts(row: IdeaRow): IdeaFacts {
 		lat: row.lat,
 		lon: row.lon,
 		saved: row.source === "saved",
+		liked: row.reaction === "like",
 		rejections: row.rejections,
 		text: `${row.description} ${row.why}`,
 	};
@@ -171,14 +172,19 @@ export async function rankedIdeas(
 	db: Db,
 	deps: Deps,
 	onDay: string,
+	opts: { unswipedOnly?: boolean } = {},
 ): Promise<IdeaFacts[]> {
-	const [open, past, rated] = await Promise.all([
+	const [open, past, rated, swiped] = await Promise.all([
 		db.select().from(ideas).where(eq(ideas.status, "open")),
 		pastDateFacts(db),
 		db
 			.select({ category: dates.category, rating: dates.rating })
 			.from(dates)
 			.where(and(eq(dates.status, "done"), isNotNull(dates.rating))),
+		db
+			.select({ category: ideas.category, reaction: ideas.reaction })
+			.from(ideas)
+			.where(isNotNull(ideas.reaction)),
 	]);
 	let hints: string[] = [];
 	try {
@@ -200,6 +206,11 @@ export async function rankedIdeas(
 					? [{ category: r.category, rating: r.rating }]
 					: [],
 			),
+			swiped.flatMap((r) =>
+				isCategory(r.category)
+					? [{ category: r.category, liked: r.reaction === "like" }]
+					: [],
+			),
 		),
 		lastByCategory,
 		today: londonDate(deps.now()),
@@ -210,6 +221,7 @@ export async function rankedIdeas(
 	const usable: IdeaFacts[] = [];
 	for (const row of open) {
 		if (row.endsOn !== null && row.endsOn < onDay) continue;
+		if (opts.unswipedOnly && row.reaction !== null) continue;
 		const facts = ideaFacts(row);
 		if (isRepeat(facts, past)) nowRepeat.push(row.id);
 		else usable.push(facts);
@@ -246,11 +258,15 @@ export async function listIdeas(
 	status: string,
 	limit: number,
 ): Promise<IdeaRow[]> {
+	const where =
+		status === "liked"
+			? and(eq(ideas.status, "open"), eq(ideas.reaction, "like"))
+			: eq(ideas.status, status);
 	return db
 		.select()
 		.from(ideas)
-		.where(eq(ideas.status, status))
-		.orderBy(desc(ideas.createdAt))
+		.where(where)
+		.orderBy(desc(ideas.reactedAt), desc(ideas.createdAt))
 		.limit(limit);
 }
 
@@ -259,9 +275,14 @@ export async function setIdeaStatus(
 	id: string,
 	status: "open" | "dismissed",
 ): Promise<boolean> {
+	// "Not for us" is a pass; bringing it back clears the swipe.
 	const rows = await db
 		.update(ideas)
-		.set({ status })
+		.set(
+			status === "dismissed"
+				? { status, reaction: "pass", reactedAt: new Date() }
+				: { status, reaction: null, reactedAt: null },
+		)
 		.where(and(eq(ideas.id, id), inArray(ideas.status, ["open", "dismissed"])))
 		.returning({ id: ideas.id });
 	return rows.length > 0;

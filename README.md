@@ -12,6 +12,7 @@ on WhatsApp and books the Idea the Owner picks
 | The rules: repeats, ranking, the Date evening, history, iCalendar | `src/domain/` (pure, unit-tested) |
 | Ideas, the Shortlist, Dates, jobs | `src/server/{ideas,week,dates,jobs}.server.ts` |
 | Calendar, TripIt, Actual Budget, Immich, the scout, postcodes | `src/server/integrations/` |
+| The swipe deck: Like, Pass, undo, the midweek refill | `src/server/swipe.server.ts`, `/swipe` |
 | Links the Owner sends in, and photos for each Idea | `src/server/{links,photos}.server.ts`, `src/domain/photos.ts` |
 | The API Muse calls, and its brief | `src/server/muse.server.ts`, `/muse/brief` |
 | Settings, all optional | `dateNightSettings()` in `src/server/env.server.ts` |

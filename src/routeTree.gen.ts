@@ -14,6 +14,7 @@ import { Route as HealthzRouteImport } from './routes/healthz'
 import { Route as HistoryRouteImport } from './routes/history'
 import { Route as IdeasRouteImport } from './routes/ideas'
 import { Route as PendingRouteImport } from './routes/pending'
+import { Route as SwipeRouteImport } from './routes/swipe'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminRequestsRouteImport } from './routes/admin/requests'
 import { Route as ApiEventsRouteImport } from './routes/api/events'
@@ -48,6 +49,11 @@ const IdeasRoute = IdeasRouteImport.update({
 const PendingRoute = PendingRouteImport.update({
   id: '/pending',
   path: '/pending',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SwipeRoute = SwipeRouteImport.update({
+  id: '/swipe',
+  path: '/swipe',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
@@ -107,6 +113,7 @@ export interface FileRoutesByFullPath {
   '/history': typeof HistoryRoute
   '/ideas': typeof IdeasRoute
   '/pending': typeof PendingRoute
+  '/swipe': typeof SwipeRoute
   '/admin/requests': typeof AdminRequestsRoute
   '/api/events': typeof ApiEventsRoute
   '/api/ideas': typeof ApiIdeasRoute
@@ -124,6 +131,7 @@ export interface FileRoutesByTo {
   '/history': typeof HistoryRoute
   '/ideas': typeof IdeasRoute
   '/pending': typeof PendingRoute
+  '/swipe': typeof SwipeRoute
   '/admin/requests': typeof AdminRequestsRoute
   '/api/events': typeof ApiEventsRoute
   '/api/ideas': typeof ApiIdeasRoute
@@ -142,6 +150,7 @@ export interface FileRoutesById {
   '/history': typeof HistoryRoute
   '/ideas': typeof IdeasRoute
   '/pending': typeof PendingRoute
+  '/swipe': typeof SwipeRoute
   '/admin/requests': typeof AdminRequestsRoute
   '/api/events': typeof ApiEventsRoute
   '/api/ideas': typeof ApiIdeasRoute
@@ -161,6 +170,7 @@ export interface FileRouteTypes {
     | '/history'
     | '/ideas'
     | '/pending'
+    | '/swipe'
     | '/admin/requests'
     | '/api/events'
     | '/api/ideas'
@@ -178,6 +188,7 @@ export interface FileRouteTypes {
     | '/history'
     | '/ideas'
     | '/pending'
+    | '/swipe'
     | '/admin/requests'
     | '/api/events'
     | '/api/ideas'
@@ -195,6 +206,7 @@ export interface FileRouteTypes {
     | '/history'
     | '/ideas'
     | '/pending'
+    | '/swipe'
     | '/admin/requests'
     | '/api/events'
     | '/api/ideas'
@@ -213,6 +225,7 @@ export interface RootRouteChildren {
   HistoryRoute: typeof HistoryRoute
   IdeasRoute: typeof IdeasRoute
   PendingRoute: typeof PendingRoute
+  SwipeRoute: typeof SwipeRoute
   AdminRequestsRoute: typeof AdminRequestsRoute
   ApiEventsRoute: typeof ApiEventsRoute
   ApiIdeasRoute: typeof ApiIdeasRoute
@@ -260,6 +273,13 @@ declare module '@tanstack/react-router' {
       path: '/pending'
       fullPath: '/pending'
       preLoaderRoute: typeof PendingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/swipe': {
+      id: '/swipe'
+      path: '/swipe'
+      fullPath: '/swipe'
+      preLoaderRoute: typeof SwipeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/': {
@@ -341,6 +361,7 @@ const rootRouteChildren: RootRouteChildren = {
   HistoryRoute: HistoryRoute,
   IdeasRoute: IdeasRoute,
   PendingRoute: PendingRoute,
+  SwipeRoute: SwipeRoute,
   AdminRequestsRoute: AdminRequestsRoute,
   ApiEventsRoute: ApiEventsRoute,
   ApiIdeasRoute: ApiIdeasRoute,

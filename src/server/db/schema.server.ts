@@ -59,6 +59,9 @@ export const ideas = pgTable(
 		/** open | dismissed | booked | repeat */
 		status: varchar("status", { length: 16 }).notNull().default("open"),
 		rejections: integer("rejections").notNull().default(0),
+		/** The Owner's swipe: like or pass; null until swiped. A pass also dismisses. */
+		reaction: varchar("reaction", { length: 8 }),
+		reactedAt: timestamp("reacted_at", { withTimezone: true, mode: "date" }),
 		/** The last day the Idea can happen, for dated events. */
 		endsOn: date("ends_on", { mode: "string" }),
 		/**

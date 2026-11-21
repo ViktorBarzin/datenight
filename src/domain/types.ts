@@ -37,6 +37,8 @@ export interface IdeaFacts extends IdeaIdentity {
 	lon: number | null;
 	/** A Saved idea: the Owner sent it in. */
 	saved: boolean;
+	/** The Owner swiped right on it. */
+	liked: boolean;
 	/** How many Shortlists the Owner turned down with this Idea on them. */
 	rejections: number;
 	/** Free text the Noticing File hints are matched against. */

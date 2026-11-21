@@ -40,6 +40,18 @@ _Avoid_: history item, previous booking
 An Idea at the venue of a Past date, or, for classes and experiences, of the same Activity kind as a Past date. A Repeat is never offered.
 _Avoid_: duplicate
 
+**Deck**:
+The open Ideas the Owner has not swiped yet, best first. When fewer than ten are left, the app looks for more.
+_Avoid_: feed, queue, stack
+
+**Like**:
+The Owner's right swipe on an Idea. Liked Ideas come first in the Shortlist.
+_Avoid_: upvote, heart, save
+
+**Pass**:
+The Owner's left swipe on an Idea. A passed Idea is never offered again.
+_Avoid_: dislike, reject, skip
+
 **Favourite**:
 A Past date the Owner rated 5 out of 5. A Favourite is offered again only when the Owner asks for one.
 _Avoid_: go-back list, classic

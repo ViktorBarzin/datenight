@@ -28,6 +28,7 @@ export const Route = createFileRoute("/ideas")({
 
 const TABS = [
 	{ status: "open", label: "Open" },
+	{ status: "liked", label: "Liked" },
 	{ status: "booked", label: "Booked" },
 	{ status: "dismissed", label: "Not for us" },
 	{ status: "repeat", label: "Done before" },

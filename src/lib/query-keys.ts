@@ -18,3 +18,7 @@ export const historyKeys = {
 export const linkKeys = {
 	all: ["links"] as const,
 };
+
+export const deckKeys = {
+	all: ["deck"] as const,
+};

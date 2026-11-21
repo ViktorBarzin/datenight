@@ -13,6 +13,7 @@ const idea = (over: Partial<IdeaFacts>): IdeaFacts => ({
 	lat: null,
 	lon: null,
 	saved: false,
+	liked: false,
 	rejections: 0,
 	text: "",
 	...over,
@@ -41,6 +42,13 @@ describe("tasteWeights", () => {
 		]);
 		expect(w.classes).toBeGreaterThan(1);
 		expect(w.food).toBeLessThan(1);
+	});
+	test("swipes nudge a category a third as much as a rating", () => {
+		const rated = tasteWeights([{ category: "classes", rating: 4 }]);
+		const swiped = tasteWeights([], [{ category: "classes", liked: true }]);
+		expect(swiped.classes - 1).toBeCloseTo((rated.classes - 1) / 3, 5);
+		const passed = tasteWeights([], [{ category: "food", liked: false }]);
+		expect(passed.food).toBeLessThan(1);
 	});
 	test("stays within bounds", () => {
 		const many = Array.from({ length: 50 }, () => ({
@@ -127,6 +135,35 @@ describe("pickShortlist", () => {
 			"f1",
 			"s1",
 			"x1",
+		]);
+	});
+
+	test("liked ideas take the places first, best first, then the usual pick", () => {
+		const withLikes = [
+			idea({ id: "f1", category: "food" }),
+			idea({ id: "s1", category: "shows" }),
+			idea({ id: "c1", category: "classes" }),
+			idea({ id: "lf", category: "food", liked: true }),
+			idea({ id: "lf2", category: "food", liked: true }),
+		];
+		expect(pickShortlist(withLikes, { splurgeAllowed: false })).toEqual([
+			"lf",
+			"lf2",
+			"s1",
+		]);
+	});
+
+	test("a liked splurge still waits for a month without one", () => {
+		const likedSplurge = [
+			idea({ id: "f1" }),
+			idea({ id: "x", priceGbp: 200, liked: true }),
+		];
+		expect(pickShortlist(likedSplurge, { splurgeAllowed: false })).toEqual([
+			"f1",
+		]);
+		expect(pickShortlist(likedSplurge, { splurgeAllowed: true })).toEqual([
+			"f1",
+			"x",
 		]);
 	});
 

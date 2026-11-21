@@ -9,7 +9,7 @@ import { and, desc, eq, inArray, sql } from "drizzle-orm";
 
 import { addDays, londonDate, londonTime, mondayOf } from "#/domain/evening";
 import { awayDays, candidatesFrom } from "#/domain/history";
-import { historyCandidates, jobRuns } from "./db/schema.server";
+import { historyCandidates, ideas, jobRuns } from "./db/schema.server";
 import type { Db } from "./db.server";
 import { type Deps, NotConfigured } from "./deps.server";
 import { addIdeas, fromScout } from "./ideas.server";
@@ -66,12 +66,54 @@ async function runClaimed(
 	}
 }
 
-export async function scoutNow(db: Db, deps: Deps): Promise<string> {
+/** Venues the app already knows, newest first, so the scout looks for new ones. */
+async function knownVenues(db: Db): Promise<string[]> {
+	const rows = await db
+		.select({ venue: ideas.venue })
+		.from(ideas)
+		.orderBy(desc(ideas.createdAt))
+		.limit(600);
+	return [...new Set(rows.map((r) => r.venue))].slice(0, 300);
+}
+
+export async function scoutNow(
+	db: Db,
+	deps: Deps,
+	refill = false,
+): Promise<string> {
 	const scout = deps.settings.scout;
 	if (!scout) throw new NotConfigured("the scout");
-	const { ideas, dropped } = await runScout(scout, londonDate(deps.now()));
-	const result = await addIdeas(db, deps, ideas.map(fromScout), "scout");
-	return `found ${ideas.length} (dropped ${dropped} malformed): ${result.added} new, ${result.repeats} repeats, ${result.duplicates} already known`;
+	const { ideas: found, dropped } = await runScout(
+		scout,
+		londonDate(deps.now()),
+		{
+			avoid: await knownVenues(db),
+			refill,
+		},
+	);
+	const result = await addIdeas(db, deps, found.map(fromScout), "scout");
+	return `found ${found.length} (dropped ${dropped} malformed): ${result.added} new, ${result.repeats} repeats, ${result.duplicates} already known`;
+}
+
+/** Below this many unswiped Ideas, a swipe starts a refill Scout run. */
+export const DECK_LOW = 10;
+
+/**
+ * Top the deck up: when fewer than DECK_LOW Ideas wait to be swiped, start
+ * one refill Scout run, at most one a day. Returns at once.
+ */
+export async function maybeRefill(
+	db: Db,
+	deps: Deps,
+	unswiped: number,
+): Promise<boolean> {
+	if (unswiped >= DECK_LOW || !deps.settings.scout) return false;
+	const key = `refill-${londonDate(deps.now())}`;
+	if (!(await claim(db, "scout", key))) return false;
+	void runClaimed(db, "scout", key, () => scoutNow(db, deps, true)).catch(
+		() => {},
+	);
+	return true;
 }
 
 export async function refreshHistory(db: Db, deps: Deps): Promise<string> {

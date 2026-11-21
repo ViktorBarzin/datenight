@@ -14,10 +14,23 @@ const RATING_STEP = 0.15;
 const MIN_WEIGHT = 0.1;
 const MAX_WEIGHT = 2;
 
+/** A swipe moves a category a third as far as a rating one step from neutral. */
+const SWIPE_STEP = RATING_STEP / 3;
+
 export function tasteWeights(
 	ratings: readonly { category: Category; rating: number }[],
+	swipes: readonly { category: Category; liked: boolean }[] = [],
 ): Record<Category, number> {
 	const weights = { ...START_WEIGHTS };
+	for (const { category, liked } of swipes) {
+		weights[category] = Math.min(
+			MAX_WEIGHT,
+			Math.max(
+				MIN_WEIGHT,
+				weights[category] + (liked ? SWIPE_STEP : -SWIPE_STEP),
+			),
+		);
+	}
 	for (const { category, rating } of ratings) {
 		weights[category] = Math.min(
 			MAX_WEIGHT,
@@ -139,8 +152,8 @@ export function scoreIdea(idea: IdeaFacts, ctx: RankContext): number {
 export const SHORTLIST_SIZE = 3;
 
 /**
- * The Shortlist from ideas already in rank order: one per Category while it
- * can, then the next best. When a Splurge is allowed this month, the best
+ * The Shortlist from ideas already in rank order: liked Ideas first, then one
+ * per Category while it can, then the next best. When a Splurge is allowed this month, the best
  * Splurge takes the last place; otherwise Splurges stay out.
  */
 export function pickShortlist(
@@ -149,16 +162,18 @@ export function pickShortlist(
 ): string[] {
 	const open = ranked.filter((i) => !opts.exclude?.has(i.id));
 	const regular = open.filter((i) => !isSplurge(i.priceGbp));
-	const splurge = opts.splurgeAllowed
-		? open.find((i) => isSplurge(i.priceGbp))
-		: undefined;
+	const splurges = opts.splurgeAllowed
+		? open.filter((i) => isSplurge(i.priceGbp))
+		: [];
+	const splurge = splurges.find((i) => i.liked) ?? splurges[0];
 	const places = splurge ? SHORTLIST_SIZE - 1 : SHORTLIST_SIZE;
 
-	const picked: IdeaFacts[] = [];
-	const seen = new Set<Category>();
+	// Liked ideas first, best first; then one per Category while it can.
+	const picked: IdeaFacts[] = regular.filter((i) => i.liked).slice(0, places);
+	const seen = new Set<Category>(picked.map((i) => i.category));
 	for (const candidate of regular) {
 		if (picked.length >= places) break;
-		if (seen.has(candidate.category)) continue;
+		if (picked.includes(candidate) || seen.has(candidate.category)) continue;
 		picked.push(candidate);
 		seen.add(candidate.category);
 	}

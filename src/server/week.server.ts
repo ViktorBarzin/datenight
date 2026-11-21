@@ -42,6 +42,7 @@ export interface IdeaView {
 	description: string;
 	why: string;
 	saved: boolean;
+	liked: boolean;
 	endsOn: string | null;
 	/** Outside image links, or /api/photos/<id> for copies the app keeps. */
 	photos: string[];
@@ -63,6 +64,7 @@ export function ideaView(row: IdeaRow): IdeaView {
 		description: row.description,
 		why: row.why,
 		saved: row.source === "saved",
+		liked: row.reaction === "like",
 		endsOn: row.endsOn,
 		photos: row.photos ?? [],
 	};

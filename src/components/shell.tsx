@@ -5,6 +5,7 @@ import { app } from "#/app.config";
 
 const NAV = [
 	{ to: "/", label: "This week" },
+	{ to: "/swipe", label: "Swipe" },
 	{ to: "/ideas", label: "Ideas" },
 	{ to: "/history", label: "History" },
 ] as const;

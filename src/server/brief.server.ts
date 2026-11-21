@@ -36,7 +36,8 @@ your own secret store. Never write it into a chat.
 5. Send Viktor the three ideas on WhatsApp, numbered 1 to 3: for each, title,
    venue, area, price for two, the one-line why and the link, and attach its
    first one or two \`photos\` (image links; a link under ${api}/photos/ needs
-   the token). Mark a splurge. Then ask him to reply 1, 2, 3 or "none".
+   the token). Mark a splurge, and mark the ones Viktor liked (\`liked: true\`)
+   when he swiped through ideas in the app. Then ask him to reply 1, 2, 3 or "none".
 
 ## 2. When Viktor replies
 

@@ -41,6 +41,7 @@ import {
 	retryLink,
 } from "./links.server";
 import { realtime } from "./realtime.server";
+import { type DeckView, deck, swipe, undoSwipe } from "./swipe.server";
 import {
 	currentWeek,
 	type IdeaView,
@@ -121,7 +122,9 @@ export const runJob = createServerFn({ method: "POST" })
 
 export const getIdeas = createServerFn({ method: "GET" })
 	.validator(
-		z.object({ status: z.enum(["open", "dismissed", "booked", "repeat"]) }),
+		z.object({
+			status: z.enum(["open", "liked", "dismissed", "booked", "repeat"]),
+		}),
 	)
 	.handler(async ({ data }): Promise<IdeaView[]> => {
 		await requireMember(getRequest());
@@ -286,4 +289,38 @@ export const tryLinkAgain = createServerFn({ method: "POST" })
 		const deps = liveDeps();
 		await retryLink(db, data.id);
 		if (deps.settings.link) void processLink(db, deps, data.id).catch(() => {});
+	});
+
+/** The next Ideas to swipe, best first. */
+export const getDeck = createServerFn({ method: "GET" }).handler(
+	async (): Promise<DeckView> => {
+		await requireMember(getRequest());
+		return deck(pool.getDb(), liveDeps(), 15);
+	},
+);
+
+export const swipeIdea = createServerFn({ method: "POST" })
+	.validator(
+		z.object({ id: z.string().uuid(), direction: z.enum(["like", "pass"]) }),
+	)
+	.handler(async ({ data }) => {
+		const request = getRequest();
+		await requireMember(request);
+		const result = await swipe(
+			pool.getDb(),
+			liveDeps(),
+			data.id,
+			data.direction,
+		);
+		await ideasChanged(request);
+		return result;
+	});
+
+export const undoSwipeIdea = createServerFn({ method: "POST" })
+	.validator(z.object({ id: z.string().uuid() }))
+	.handler(async ({ data }): Promise<void> => {
+		const request = getRequest();
+		await requireMember(request);
+		await undoSwipe(pool.getDb(), data.id);
+		await ideasChanged(request);
 	});

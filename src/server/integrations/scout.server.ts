@@ -56,6 +56,10 @@ export function parseScoutIdeas(raw: unknown): {
 export async function runScout(
 	cfg: NonNullable<DateNightSettings["scout"]>,
 	today: string,
+	opts: { avoid: readonly string[]; refill: boolean } = {
+		avoid: [],
+		refill: false,
+	},
 ): Promise<{ ideas: ScoutIdea[]; dropped: number }> {
 	const res = await fetch(cfg.url, {
 		method: "POST",
@@ -63,7 +67,7 @@ export async function runScout(
 			Authorization: `Bearer ${cfg.token}`,
 			"content-type": "application/json",
 		},
-		body: JSON.stringify({ today }),
+		body: JSON.stringify({ today, avoid: opts.avoid, refill: opts.refill }),
 		signal: AbortSignal.timeout(RUN_TIMEOUT_MS),
 	});
 	if (!res.ok)
