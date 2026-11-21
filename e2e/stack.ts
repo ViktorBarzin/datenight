@@ -87,11 +87,12 @@ const control = Bun.serve({
 			mock.loginAs = String(body.username);
 			return Response.json({ ok: true });
 		}
-		if (pathname === "/silent-item") {
+		if (pathname === "/silent-idea") {
 			// A row written without NOTIFY: only a resync can show it.
 			const user = mock.users.get(String(body.username));
 			if (!user) return new Response("no such user", { status: 404 });
-			await database.client`insert into items (owner_sub, title) values (${user.uid}, ${String(body.title)})`;
+			const title = String(body.title);
+			await database.client`insert into ideas (title, venue, category, activity_kind, source, dedupe_key) values (${title}, ${title}, ${"food"}, ${"dinner"}, ${"saved"}, ${`silent|${title}`})`;
 			return Response.json({ ok: true });
 		}
 		if (pathname === "/kill-listen") {

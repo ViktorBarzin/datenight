@@ -109,7 +109,7 @@ describe.skipIf(!ready)("the built server in cloud mode, realtime on", () => {
 	test("the pod holds at most two connections under concurrent requests", async () => {
 		const results = await Promise.all(
 			Array.from({ length: 8 }, () =>
-				fetch(`${server.origin}/api/items`, { headers: USER }),
+				fetch(`${server.origin}/api/ideas`, { headers: USER }),
 			),
 		);
 		expect(results.map((r) => r.status)).toEqual(Array(8).fill(200));

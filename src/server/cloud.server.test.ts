@@ -97,13 +97,13 @@ async function appConnections(): Promise<{ total: number; listen: number }> {
 }
 
 describe.skipIf(!ready)("the built server in cloud mode", () => {
-	test("/api/items: 401 anonymous, 200 with the edge's headers", async () => {
-		const anonymous = await get("/api/items", EDGE);
+	test("/api/ideas: 401 anonymous, 200 with the edge's headers", async () => {
+		const anonymous = await get("/api/ideas", EDGE);
 		expect(anonymous.status).toBe(401);
 		expect(await errorCode(anonymous)).toBe("unauthorized");
-		const signedIn = await get("/api/items", { ...OWNER, ...EDGE });
+		const signedIn = await get("/api/ideas", { ...OWNER, ...EDGE });
 		expect(signedIn.status).toBe(200);
-		expect(await signedIn.json()).toEqual({ items: [] });
+		expect(await signedIn.json()).toEqual({ ideas: [] });
 	});
 
 	test("identity headers without the edge secret, or with a wrong one, are anonymous", async () => {
@@ -112,13 +112,13 @@ describe.skipIf(!ready)("the built server in cloud mode", () => {
 			{ ...OWNER, "x-cloud-edge-secret": `${SECRET.slice(0, -1)}x` },
 			{ ...OWNER, "x-cloud-edge-secret": "short" },
 		]) {
-			const res = await get("/api/items", headers);
+			const res = await get("/api/ideas", headers);
 			expect(res.status).toBe(401);
 		}
 	});
 
 	test("a bearer token is refused, and the error says Cloud takes none", async () => {
-		const res = await get("/api/items", {
+		const res = await get("/api/ideas", {
 			...EDGE,
 			authorization: "Bearer eyJ.x.y",
 		});
@@ -206,7 +206,7 @@ describe.skipIf(!ready)("the built server in cloud mode", () => {
 
 	test("the pool holds one connection under concurrent requests", async () => {
 		const results = await Promise.all(
-			Array.from({ length: 8 }, () => get("/api/items", { ...OWNER, ...EDGE })),
+			Array.from({ length: 8 }, () => get("/api/ideas", { ...OWNER, ...EDGE })),
 		);
 		expect(results.map((r) => r.status)).toEqual(Array(8).fill(200));
 		expect((await appConnections()).total).toBeLessThanOrEqual(1);

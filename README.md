@@ -1,9 +1,28 @@
 # Date Night
 
-A new app on the default app stack (ADR-0001): TanStack Start on Bun, Drizzle
-on the shared Postgres, Authentik sign-in through app-side OIDC, realtime over
-LISTEN/NOTIFY and SSE. The example domain is a list of items, each person's
-own; AGENTS.md, "Replacing the example", says how to swap in your own data.
+A private app that finds one new London date a week. It keeps the Ideas,
+the Past dates and the couple's taste; Meta's Muse runs the weekly routine
+on WhatsApp and books the Idea the Owner picks
+([ADR 0001](docs/adr/0001-muse-drives-the-week.md)). The words are in
+[GLOSSARY.md](GLOSSARY.md) and the plan is
+[docs/plans/2026-11-21-datenight-plan.md](docs/plans/2026-11-21-datenight-plan.md).
+
+| Part | Where |
+|---|---|
+| The rules: repeats, ranking, the Date evening, history, iCalendar | `src/domain/` (pure, unit-tested) |
+| Ideas, the Shortlist, Dates, jobs | `src/server/{ideas,week,dates,jobs}.server.ts` |
+| Calendar, TripIt, Actual Budget, Immich, the scout, postcodes | `src/server/integrations/` |
+| The API Muse calls, and its brief | `src/server/muse.server.ts`, `/muse/brief` |
+| Settings, all optional | `dateNightSettings()` in `src/server/env.server.ts` |
+
+Every Sunday the pod refreshes history at 19:00 and runs the scout at 20:00
+London time (`SCHEDULER=on`). The scout is the `date-scout` agent in
+claude-agent-service (`POST /v1/datenight/scout`). The first `GET
+/api/muse/week` of a week makes its Shortlist.
+
+Built on the default app stack (app-kit ADR-0001): TanStack Start on Bun,
+Drizzle on the shared Postgres, Authentik sign-in through app-side OIDC,
+realtime over LISTEN/NOTIFY and SSE.
 
 ## On Cloud
 

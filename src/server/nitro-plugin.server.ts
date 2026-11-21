@@ -11,6 +11,7 @@
  * - the realtime LISTEN connection opens at boot, so its gauges mean
  *   something before the first SSE subscriber, unless the connection budget
  *   turns realtime off;
+ * - the Date Night scheduler starts when SCHEDULER=on;
  * - SIGTERM/SIGINT close the SSE streams and LISTEN, let in-flight requests
  *   finish, send queued telemetry, close the metrics listener and the pool,
  *   then exit.
@@ -28,14 +29,17 @@ import { definePlugin } from "nitro";
 import { assertBunVersion } from "#/lib/bun-version";
 
 import { pool } from "./db.server";
+import { liveDeps } from "./deps.server";
 import {
 	databaseConfigured,
+	dateNightSettings,
 	isDevelopment,
 	metricsPort,
 	realtimeEnabled,
 	serviceInfo,
 	telemetrySettings,
 } from "./env.server";
+import { startScheduler, stopScheduler } from "./jobs.server";
 import { realtime } from "./realtime.server";
 
 export default definePlugin(() => {
@@ -58,8 +62,15 @@ export default definePlugin(() => {
 	const metrics = startMetricsServer({ port: metricsPort() });
 	if (databaseConfigured() && realtimeEnabled())
 		void realtime.start().catch(() => {});
+	// The Sunday history refresh and Scout run (jobs.server.ts), on in the
+	// deployed pod only.
+	if (databaseConfigured() && dateNightSettings().schedulerEnabled)
+		startScheduler(() => pool.getDb(), liveDeps);
 	installShutdown({
-		beforeDrain: [{ name: "realtime", run: () => realtime.stop() }],
+		beforeDrain: [
+			{ name: "scheduler", run: () => stopScheduler() },
+			{ name: "realtime", run: () => realtime.stop() },
+		],
 		afterDrain: [
 			{ name: "telemetry", run: () => closeAndFlush(2000) },
 			{ name: "metrics", run: () => metrics?.stop() },

@@ -1,7 +1,13 @@
 import { expect, test } from "@playwright/test";
 
 import { app } from "../src/app.config";
-import { addUser, call, collectErrors, signedInPage } from "./fixtures";
+import {
+	addUser,
+	call,
+	collectErrors,
+	saveIdeaVia,
+	signedInPage,
+} from "./fixtures";
 
 test("a signed-out visitor sees the home page with a sign-in link", async ({
 	page,
@@ -21,17 +27,22 @@ test("a signed-out visitor sees the home page with a sign-in link", async ({
 	expect(errors).toEqual([]);
 });
 
-test("a member signs in through the provider and sees the list", async ({
+test("a member signs in through the provider, sees this week and saves an idea", async ({
 	browser,
 }) => {
 	await addUser("member@example.com", [app.usersGroup]);
 	const page = await signedInPage(browser, "member@example.com");
 	const errors = collectErrors(page);
 	await expect(page.getByTestId("username")).toHaveText("member@example.com");
-	await expect(page.getByTestId("no-items")).toBeVisible();
-	await page.getByLabel("New item").fill("hello");
-	await page.getByRole("button", { name: "Add" }).click();
-	await expect(page.getByTestId("items")).toContainText("hello");
+	await expect(page.getByTestId("home")).toBeVisible();
+	await page.getByRole("link", { name: "Ideas" }).click();
+	await expect(page.getByTestId("ideas")).toBeVisible();
+	await saveIdeaVia(page, "hello");
+	await expect(page.getByTestId("ideas")).toContainText("hello");
+	await page.getByRole("link", { name: "History" }).click();
+	await expect(
+		page.getByRole("heading", { name: /Were these dates/ }),
+	).toBeVisible();
 	expect(errors).toEqual([]);
 });
 

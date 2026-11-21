@@ -45,3 +45,14 @@ export async function signedInPage(
 	await page.goto(`/api/auth/start?return=${encodeURIComponent(path)}`);
 	return page;
 }
+
+/** Save an idea through the Ideas page's form; the page must be on /ideas. */
+export async function saveIdeaVia(page: Page, title: string): Promise<void> {
+	await page.getByRole("button", { name: "Save an idea" }).click();
+	await page.getByLabel("What it is").fill(title);
+	await page.getByLabel("Venue").fill(title);
+	await page
+		.getByLabel("Kind of activity, such as pottery class")
+		.fill("dinner");
+	await page.getByRole("button", { name: "Save", exact: true }).click();
+}

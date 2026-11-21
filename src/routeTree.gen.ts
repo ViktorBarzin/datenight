@@ -11,14 +11,18 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as HealthzRouteImport } from './routes/healthz'
+import { Route as HistoryRouteImport } from './routes/history'
+import { Route as IdeasRouteImport } from './routes/ideas'
 import { Route as PendingRouteImport } from './routes/pending'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminRequestsRouteImport } from './routes/admin/requests'
 import { Route as ApiEventsRouteImport } from './routes/api/events'
-import { Route as ApiItemsRouteImport } from './routes/api/items'
+import { Route as ApiIdeasRouteImport } from './routes/api/ideas'
+import { Route as MuseBriefRouteImport } from './routes/muse/brief'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiAuthFinishRouteImport } from './routes/api/auth/finish'
 import { Route as ApiAuthStartRouteImport } from './routes/api/auth/start'
+import { Route as ApiMuseSplatRouteImport } from './routes/api/muse/$'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -28,6 +32,16 @@ const IndexRoute = IndexRouteImport.update({
 const HealthzRoute = HealthzRouteImport.update({
   id: '/healthz',
   path: '/healthz',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HistoryRoute = HistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IdeasRoute = IdeasRouteImport.update({
+  id: '/ideas',
+  path: '/ideas',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PendingRoute = PendingRouteImport.update({
@@ -50,9 +64,14 @@ const ApiEventsRoute = ApiEventsRouteImport.update({
   path: '/api/events',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiItemsRoute = ApiItemsRouteImport.update({
-  id: '/api/items',
-  path: '/api/items',
+const ApiIdeasRoute = ApiIdeasRouteImport.update({
+  id: '/api/ideas',
+  path: '/api/ideas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MuseBriefRoute = MuseBriefRouteImport.update({
+  id: '/muse/brief',
+  path: '/muse/brief',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
@@ -70,94 +89,127 @@ const ApiAuthStartRoute = ApiAuthStartRouteImport.update({
   path: '/api/auth/start',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMuseSplatRoute = ApiMuseSplatRouteImport.update({
+  id: '/api/muse/$',
+  path: '/api/muse/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/healthz': typeof HealthzRoute
+  '/history': typeof HistoryRoute
+  '/ideas': typeof IdeasRoute
   '/pending': typeof PendingRoute
   '/admin/requests': typeof AdminRequestsRoute
   '/api/events': typeof ApiEventsRoute
-  '/api/items': typeof ApiItemsRoute
+  '/api/ideas': typeof ApiIdeasRoute
+  '/muse/brief': typeof MuseBriefRoute
   '/admin/': typeof AdminIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/auth/finish': typeof ApiAuthFinishRoute
   '/api/auth/start': typeof ApiAuthStartRoute
+  '/api/muse/$': typeof ApiMuseSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/healthz': typeof HealthzRoute
+  '/history': typeof HistoryRoute
+  '/ideas': typeof IdeasRoute
   '/pending': typeof PendingRoute
   '/admin/requests': typeof AdminRequestsRoute
   '/api/events': typeof ApiEventsRoute
-  '/api/items': typeof ApiItemsRoute
+  '/api/ideas': typeof ApiIdeasRoute
+  '/muse/brief': typeof MuseBriefRoute
   '/admin': typeof AdminIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/auth/finish': typeof ApiAuthFinishRoute
   '/api/auth/start': typeof ApiAuthStartRoute
+  '/api/muse/$': typeof ApiMuseSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/healthz': typeof HealthzRoute
+  '/history': typeof HistoryRoute
+  '/ideas': typeof IdeasRoute
   '/pending': typeof PendingRoute
   '/admin/requests': typeof AdminRequestsRoute
   '/api/events': typeof ApiEventsRoute
-  '/api/items': typeof ApiItemsRoute
+  '/api/ideas': typeof ApiIdeasRoute
+  '/muse/brief': typeof MuseBriefRoute
   '/admin/': typeof AdminIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/auth/finish': typeof ApiAuthFinishRoute
   '/api/auth/start': typeof ApiAuthStartRoute
+  '/api/muse/$': typeof ApiMuseSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/healthz'
+    | '/history'
+    | '/ideas'
     | '/pending'
     | '/admin/requests'
     | '/api/events'
-    | '/api/items'
+    | '/api/ideas'
+    | '/muse/brief'
     | '/admin/'
     | '/api/auth/$'
     | '/api/auth/finish'
     | '/api/auth/start'
+    | '/api/muse/$'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/healthz'
+    | '/history'
+    | '/ideas'
     | '/pending'
     | '/admin/requests'
     | '/api/events'
-    | '/api/items'
+    | '/api/ideas'
+    | '/muse/brief'
     | '/admin'
     | '/api/auth/$'
     | '/api/auth/finish'
     | '/api/auth/start'
+    | '/api/muse/$'
   id:
     | '__root__'
     | '/'
     | '/healthz'
+    | '/history'
+    | '/ideas'
     | '/pending'
     | '/admin/requests'
     | '/api/events'
-    | '/api/items'
+    | '/api/ideas'
+    | '/muse/brief'
     | '/admin/'
     | '/api/auth/$'
     | '/api/auth/finish'
     | '/api/auth/start'
+    | '/api/muse/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   HealthzRoute: typeof HealthzRoute
+  HistoryRoute: typeof HistoryRoute
+  IdeasRoute: typeof IdeasRoute
   PendingRoute: typeof PendingRoute
   AdminRequestsRoute: typeof AdminRequestsRoute
   ApiEventsRoute: typeof ApiEventsRoute
-  ApiItemsRoute: typeof ApiItemsRoute
+  ApiIdeasRoute: typeof ApiIdeasRoute
+  MuseBriefRoute: typeof MuseBriefRoute
   AdminIndexRoute: typeof AdminIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiAuthFinishRoute: typeof ApiAuthFinishRoute
   ApiAuthStartRoute: typeof ApiAuthStartRoute
+  ApiMuseSplatRoute: typeof ApiMuseSplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -174,6 +226,20 @@ declare module '@tanstack/react-router' {
       path: '/healthz'
       fullPath: '/healthz'
       preLoaderRoute: typeof HealthzRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/history': {
+      id: '/history'
+      path: '/history'
+      fullPath: '/history'
+      preLoaderRoute: typeof HistoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ideas': {
+      id: '/ideas'
+      path: '/ideas'
+      fullPath: '/ideas'
+      preLoaderRoute: typeof IdeasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pending': {
@@ -204,11 +270,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiEventsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/items': {
-      id: '/api/items'
-      path: '/api/items'
-      fullPath: '/api/items'
-      preLoaderRoute: typeof ApiItemsRouteImport
+    '/api/ideas': {
+      id: '/api/ideas'
+      path: '/api/ideas'
+      fullPath: '/api/ideas'
+      preLoaderRoute: typeof ApiIdeasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/muse/brief': {
+      id: '/muse/brief'
+      path: '/muse/brief'
+      fullPath: '/muse/brief'
+      preLoaderRoute: typeof MuseBriefRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/auth/$': {
@@ -232,20 +305,31 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthStartRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/muse/$': {
+      id: '/api/muse/$'
+      path: '/api/muse/$'
+      fullPath: '/api/muse/$'
+      preLoaderRoute: typeof ApiMuseSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   HealthzRoute: HealthzRoute,
+  HistoryRoute: HistoryRoute,
+  IdeasRoute: IdeasRoute,
   PendingRoute: PendingRoute,
   AdminRequestsRoute: AdminRequestsRoute,
   ApiEventsRoute: ApiEventsRoute,
-  ApiItemsRoute: ApiItemsRoute,
+  ApiIdeasRoute: ApiIdeasRoute,
+  MuseBriefRoute: MuseBriefRoute,
   AdminIndexRoute: AdminIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiAuthFinishRoute: ApiAuthFinishRoute,
   ApiAuthStartRoute: ApiAuthStartRoute,
+  ApiMuseSplatRoute: ApiMuseSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -136,12 +136,12 @@ describe.skipIf(!ready)("the built server", () => {
 		}
 	});
 
-	test("/api/items is 401 without a session, and a forged forward-auth header changes nothing", async () => {
+	test("/api/ideas is 401 without a session, and a forged forward-auth header changes nothing", async () => {
 		for (const headers of [{}, { "x-authentik-username": "admin" }] as Record<
 			string,
 			string
 		>[]) {
-			const res = await get("/api/items", null, headers);
+			const res = await get("/api/ideas", null, headers);
 			expect(res.status).toBe(401);
 			expect((await res.json()).error.code).toBe("unauthorized");
 		}
@@ -160,7 +160,7 @@ describe.skipIf(!ready)("the built server", () => {
 		for (const path of [
 			"/pending",
 			"/healthz",
-			"/api/items",
+			"/api/ideas",
 			"/api/auth/finish?return=/",
 		]) {
 			const res = await get(path, null);
@@ -172,7 +172,7 @@ describe.skipIf(!ready)("the built server", () => {
 	});
 
 	test("a cross-origin POST is refused before it reaches a handler", async () => {
-		for (const path of ["/_serverFn/anything", "/api/items"]) {
+		for (const path of ["/_serverFn/anything", "/api/ideas"]) {
 			const res = await fetch(`${server.origin}${path}`, {
 				method: "POST",
 				headers: {
@@ -196,16 +196,16 @@ describe.skipIf(!ready)("the built server", () => {
 		expect(session?.toLowerCase()).toContain("httponly");
 		expect(session?.toLowerCase()).not.toContain("domain=");
 		expect(await response.text()).toContain("member@example.com");
-		const items = await get("/api/items", jar);
+		const items = await get("/api/ideas", jar);
 		expect(items.status).toBe(200);
-		expect(await items.json()).toEqual({ items: [] });
+		expect(await items.json()).toEqual({ ideas: [] });
 	});
 
 	test("a non-member gets 403 access_pending and an access request; approval lets them in", async () => {
 		const user = mock.addUser({ username: "stranger@example.com", groups: [] });
 		const { jar, hops } = await signIn("stranger@example.com");
 		expect(hops.at(-1)?.url).toBe(`${server.origin}/pending`);
-		const res = await get("/api/items", jar);
+		const res = await get("/api/ideas", jar);
 		expect(res.status).toBe(403);
 		expect((await res.json()).error.code).toBe("access_pending");
 		const rows =
@@ -216,7 +216,7 @@ describe.skipIf(!ready)("the built server", () => {
 		// the admin page). The next re-check lets the person in.
 		user.groups.push(app.usersGroup);
 		await database.client`update member_checks set checked_at = now() - interval '16 minutes' where sub = ${user.uid}`;
-		expect((await get("/api/items", jar)).status).toBe(200);
+		expect((await get("/api/ideas", jar)).status).toBe(200);
 	});
 
 	test("the admin page is for the admins group, with a link to access requests", async () => {
@@ -239,7 +239,7 @@ describe.skipIf(!ready)("the built server", () => {
 		expect(refused).not.toContain('data-testid="admin-home"');
 	});
 
-	test("bearer tokens work for /api/items, and a bad one does not fall back to the cookie", async () => {
+	test("bearer tokens work for /api/ideas, and a bad one does not fall back to the cookie", async () => {
 		const user = mock.addUser({
 			username: "cli@example.com",
 			groups: [app.usersGroup],
@@ -249,17 +249,17 @@ describe.skipIf(!ready)("the built server", () => {
 			preferred_username: user.username,
 			groups: user.groups,
 		});
-		const ok = await get("/api/items?limit=5", null, {
+		const ok = await get("/api/ideas?limit=5", null, {
 			authorization: `Bearer ${token}`,
 		});
 		expect(ok.status).toBe(200);
-		const bad = await get("/api/items?limit=0", null, {
+		const bad = await get("/api/ideas?limit=0", null, {
 			authorization: `Bearer ${token}`,
 		});
 		expect(bad.status).toBe(422);
 		const { jar } = await signIn("cli@example.com");
 		expect(
-			(await get("/api/items", jar, { authorization: "Bearer not-a-jwt" }))
+			(await get("/api/ideas", jar, { authorization: "Bearer not-a-jwt" }))
 				.status,
 		).toBe(401);
 	});

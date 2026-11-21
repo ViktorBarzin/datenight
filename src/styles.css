@@ -3,32 +3,32 @@
 
 @custom-variant dark (@media (prefers-color-scheme: dark));
 
-/* shadcn/ui tokens (zinc). */
+/* shadcn/ui tokens, warmed: a wine primary on paper. */
 :root {
-	--background: #ffffff;
-	--foreground: #09090b;
-	--primary: #18181b;
-	--primary-foreground: #fafafa;
-	--secondary: #f4f4f5;
-	--secondary-foreground: #18181b;
-	--muted: #f4f4f5;
-	--muted-foreground: #71717a;
-	--accent: #f4f4f5;
-	--accent-foreground: #18181b;
+	--background: #fbf8f5;
+	--foreground: #1f1a17;
+	--primary: #8e2f45;
+	--primary-foreground: #fdf6f2;
+	--secondary: #f1e9e3;
+	--secondary-foreground: #1f1a17;
+	--muted: #f1e9e3;
+	--muted-foreground: #6f625a;
+	--accent: #f6e4e6;
+	--accent-foreground: #5c1d2c;
 	--destructive: #dc2626;
 	--destructive-foreground: #fafafa;
-	--border: #e4e4e7;
-	--input: #e4e4e7;
-	--ring: #a1a1aa;
+	--border: #e6dcd4;
+	--input: #e6dcd4;
+	--ring: #c58b98;
 	--radius: 0.5rem;
 }
 
 @media (prefers-color-scheme: dark) {
 	:root {
-		--background: #09090b;
-		--foreground: #fafafa;
-		--primary: #fafafa;
-		--primary-foreground: #18181b;
+		--background: #15110f;
+		--foreground: #f5eee9;
+		--primary: #e7a1b1;
+		--primary-foreground: #2a0f17;
 		--secondary: #27272a;
 		--secondary-foreground: #fafafa;
 		--muted: #27272a;

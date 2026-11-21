@@ -7,7 +7,7 @@
 import { type Browser, expect, type Page, test } from "@playwright/test";
 
 import { app } from "../src/app.config";
-import { collectErrors } from "./fixtures";
+import { collectErrors, saveIdeaVia } from "./fixtures";
 
 const control = `http://127.0.0.1:${process.env.E2E_CLOUD_CONTROL_PORT}`;
 
@@ -115,17 +115,16 @@ test("with realtime off, a write shows in this tab and reaches another by refetc
 	browser,
 }) => {
 	const streams: string[] = [];
-	const a = await visitAs(browser, "writer@example.com", "/", streams);
-	const b = await visitAs(browser, "writer@example.com", "/", streams);
-	await expect(a.getByTestId("no-items")).toBeVisible();
-	await expect(b.getByTestId("no-items")).toBeVisible();
+	const a = await visitAs(browser, "writer@example.com", "/ideas", streams);
+	const b = await visitAs(browser, "writer@example.com", "/ideas", streams);
+	await expect(a.getByTestId("ideas")).toBeVisible();
+	await expect(b.getByTestId("ideas")).toBeVisible();
 
-	await a.getByLabel("New item").fill("written on a nano database");
-	await a.getByRole("button", { name: "Add" }).click();
-	await expect(a.getByTestId("items")).toContainText(
+	await saveIdeaVia(a, "written on a nano database");
+	await expect(a.getByTestId("ideas")).toContainText(
 		"written on a nano database",
 	);
-	await expect(b.getByTestId("items")).toContainText(
+	await expect(b.getByTestId("ideas")).toContainText(
 		"written on a nano database",
 		{ timeout: app.pollMs + 5_000 },
 	);

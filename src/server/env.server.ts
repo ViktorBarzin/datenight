@@ -279,3 +279,96 @@ export function authConfig(db: () => AuthDb): AppAuthConfig {
 		devUser: isDevOrTest() ? env("DEV_USER") : null,
 	};
 }
+
+/**
+ * Date Night's own settings. Each service is optional: without its settings
+ * the app runs and the part that needs it reports that it is not set up.
+ * Names of people and the home location live here, from Vault, never in the
+ * repo.
+ */
+export interface DateNightSettings {
+	/** Bearer token Muse sends on /api/muse/*. */
+	museToken: string | null;
+	scout: { url: string; token: string } | null;
+	caldav: {
+		baseUrl: string;
+		user: string;
+		password: string;
+		/** The calendar the Date and the Surprise hold go into, and that busy evenings come from. */
+		calendar: string;
+		/** The Noticing File task list, read for hints. */
+		noticing: string | null;
+	} | null;
+	owner: { name: string; email: string } | null;
+	partner: { name: string; email: string } | null;
+	actual: { url: string; apiKey: string; syncId: string } | null;
+	immich: { url: string; apiKey: string } | null;
+	tripitFeedUrl: string | null;
+	home: { lat: number; lon: number } | null;
+	/** The first day history import looks at. */
+	historySince: string;
+	/** The in-process scheduler; off in tests and local runs unless set. */
+	schedulerEnabled: boolean;
+}
+
+export function dateNightSettings(): DateNightSettings {
+	const lat = Number.parseFloat(secret("HOME_LAT") ?? "");
+	const lon = Number.parseFloat(secret("HOME_LON") ?? "");
+	return {
+		museToken: secret("MUSE_TOKEN"),
+		scout: (() => {
+			const url = env("SCOUT_URL");
+			const token = secret("SCOUT_TOKEN");
+			return url && token ? { url, token } : null;
+		})(),
+		caldav: (() => {
+			const baseUrl = env("CALDAV_BASE_URL");
+			const user = env("CALDAV_USER");
+			const password = secret("CALDAV_PASSWORD");
+			if (!baseUrl || !user || !password) return null;
+			return {
+				baseUrl: baseUrl.replace(/\/+$/, ""),
+				user,
+				password,
+				calendar: env("CALDAV_CALENDAR") ?? "personal",
+				noticing: env("NOTICING_CALENDAR"),
+			};
+		})(),
+		owner: (() => {
+			const name = secret("OWNER_NAME");
+			const email = secret("OWNER_EMAIL");
+			return name && email ? { name, email } : null;
+		})(),
+		partner: (() => {
+			const name = secret("PARTNER_NAME");
+			const email = secret("PARTNER_EMAIL");
+			return name && email ? { name, email } : null;
+		})(),
+		actual: (() => {
+			const url = env("ACTUAL_URL");
+			const apiKey = secret("ACTUAL_API_KEY");
+			const syncId = secret("ACTUAL_SYNC_ID");
+			return url && apiKey && syncId
+				? { url: url.replace(/\/+$/, ""), apiKey, syncId }
+				: null;
+		})(),
+		immich: (() => {
+			const url = env("IMMICH_URL");
+			const apiKey = secret("IMMICH_API_KEY");
+			return url && apiKey ? { url: url.replace(/\/+$/, ""), apiKey } : null;
+		})(),
+		tripitFeedUrl: secret("TRIPIT_FEED_URL"),
+		home: Number.isFinite(lat) && Number.isFinite(lon) ? { lat, lon } : null,
+		historySince: env("HISTORY_SINCE") ?? "2022-08-05",
+		schedulerEnabled: env("SCHEDULER") === "on",
+	};
+}
+
+/** The app's public address, for links in the Muse brief. */
+export function publicOrigin(): string {
+	return (
+		list("PUBLIC_ORIGINS")[0] ??
+		env("CLOUD_PUBLIC_URL") ??
+		"https://datenight.viktorbarzin.me"
+	);
+}
