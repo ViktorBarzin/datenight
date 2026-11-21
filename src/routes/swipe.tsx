@@ -126,7 +126,7 @@ function SwipePage() {
 			admin={status.admin}
 		>
 			<main
-				className="mx-auto flex w-full max-w-md flex-col gap-4"
+				className="mx-auto flex w-full max-w-md flex-col gap-4 overflow-x-clip"
 				data-testid="swipe"
 			>
 				<p className="text-sm text-muted-foreground">
