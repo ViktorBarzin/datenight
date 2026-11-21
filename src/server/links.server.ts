@@ -4,7 +4,7 @@
  * a failed one waits for "Try again".
  */
 import { getLogger } from "@viktorbarzin/log";
-import { and, asc, desc, eq, gt, lt } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, lt } from "drizzle-orm";
 
 import { ideas, type SavedLinkRow, savedLinks } from "./db/schema.server";
 import type { Db } from "./db.server";
@@ -118,7 +118,12 @@ export async function retryLink(db: Db, id: string): Promise<void> {
 	await db
 		.update(savedLinks)
 		.set({ status: "pending", reason: "" })
-		.where(and(eq(savedLinks.id, id), eq(savedLinks.status, "failed")));
+		.where(
+			and(
+				eq(savedLinks.id, id),
+				inArray(savedLinks.status, ["failed", "not_found"]),
+			),
+		);
 }
 
 /** Read one pending link into an Idea. Claims it first, so it runs once. */

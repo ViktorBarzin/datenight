@@ -347,7 +347,7 @@ function PasteLink() {
 									{l.reason}
 								</span>
 							) : null}
-							{l.status === "failed" ? (
+							{l.status === "failed" || l.status === "not_found" ? (
 								<button
 									type="button"
 									className="text-primary underline underline-offset-4"
