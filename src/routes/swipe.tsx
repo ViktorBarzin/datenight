@@ -132,7 +132,7 @@ function SwipePage() {
 				<p className="text-sm text-muted-foreground">
 					Swipe right if you would go, left if not. Likes come first on Monday.
 				</p>
-				<div className="relative h-[34rem]">
+				<div className="relative h-[min(34rem,calc(100dvh-15rem))] min-h-[24rem]">
 					{deck.isPending ? (
 						<p className="text-muted-foreground">Loading...</p>
 					) : !top ? (
@@ -273,7 +273,7 @@ function Card({
 			data-testid={behind ? "card-behind" : "card"}
 			aria-label={idea.title}
 		>
-			<div className="relative h-[62%] shrink-0 bg-muted">
+			<div className="relative min-h-0 flex-1 bg-muted">
 				{shown ? (
 					<img
 						src={shown}
@@ -311,7 +311,7 @@ function Card({
 					PASS
 				</span>
 			</div>
-			<div className="flex min-h-0 flex-1 flex-col gap-1.5 p-4">
+			<div className="flex shrink-0 flex-col gap-1.5 p-4">
 				<div className="flex flex-wrap items-center gap-2 text-xs">
 					<span
 						className={`rounded-full px-2 py-0.5 font-medium ${CATEGORY_TINT[idea.category] ?? "bg-muted"}`}
@@ -335,10 +335,10 @@ function Card({
 					{idea.area ? ` · ${idea.area}` : ""}
 					{idea.endsOn ? ` · until ${idea.endsOn}` : ""}
 				</p>
-				<p className="line-clamp-3 text-sm">{idea.why || idea.description}</p>
+				<p className="line-clamp-2 text-sm">{idea.why || idea.description}</p>
 				{idea.bookingUrl || idea.url ? (
 					<a
-						className="mt-auto self-start text-sm text-primary underline underline-offset-4"
+						className="self-start text-sm text-primary underline underline-offset-4"
 						href={idea.bookingUrl || idea.url}
 						target="_blank"
 						rel="noreferrer"

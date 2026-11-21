@@ -40,6 +40,9 @@ export class NotConfigured extends Error {
 	}
 }
 
+const HINT_TTL_MS = 10 * 60_000;
+let hintCache: { at: number; hints: string[] } | null = null;
+
 export function liveDeps(): Deps {
 	const settings = dateNightSettings();
 	const caldav = settings.caldav;
@@ -55,9 +58,15 @@ export function liveDeps(): Deps {
 			settings.tripitFeedUrl ? tripIntervals(settings.tripitFeedUrl) : [],
 		hints: async () => {
 			if (!caldav) return [];
-			return (await noticingTodos(caldav)).map(
+			// The Noticing File changes a few times a week; a CalDAV round trip on
+			// every ranking made the swipe deck slow to open.
+			if (hintCache && Date.now() - hintCache.at < HINT_TTL_MS)
+				return hintCache.hints;
+			const hints = (await noticingTodos(caldav)).map(
 				(t) => `${t.summary} ${t.description}`,
 			);
+			hintCache = { at: Date.now(), hints };
+			return hints;
 		},
 		putEvent: async (uid, ics) => {
 			if (!caldav) throw new NotConfigured("the calendar");

@@ -31,7 +31,7 @@ export function Shell({
 				>
 					{app.displayName}
 				</Link>
-				<nav className="flex items-baseline gap-4 text-sm">
+				<nav className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm whitespace-nowrap">
 					{NAV.map((n) => (
 						<Link
 							key={n.to}
@@ -54,7 +54,10 @@ export function Shell({
 							Admin
 						</a>
 					) : null}
-					<span className="text-muted-foreground" data-testid="username">
+					<span
+						className="hidden text-muted-foreground sm:inline"
+						data-testid="username"
+					>
 						{username}
 					</span>
 					{signOutUrl ? (
