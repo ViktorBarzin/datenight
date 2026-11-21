@@ -119,7 +119,11 @@ export async function refreshHistory(db: Db, deps: Deps): Promise<string> {
 	return `${parts.join(", ")}; ${found.length} possible past dates`;
 }
 
-/** Run a job by hand now, for the page's buttons. Refused while the same job runs. */
+/**
+ * Start a job by hand, for the page's buttons, and return at once: a Scout
+ * run takes minutes, longer than a browser request lives. The page shows the
+ * outcome from job_runs. Refused while the same job runs.
+ */
 export async function runNow(
 	db: Db,
 	deps: Deps,
@@ -137,10 +141,13 @@ export async function runNow(
 			),
 		);
 	if (running) throw new Error(`${name} is already running`);
+	if (name === "scout" && !deps.settings.scout)
+		throw new NotConfigured("the scout");
 	await claim(db, name, periodKey);
-	return runClaimed(db, name, periodKey, () =>
+	void runClaimed(db, name, periodKey, () =>
 		name === "scout" ? scoutNow(db, deps) : refreshHistory(db, deps),
-	);
+	).catch(() => {});
+	return `${name} started`;
 }
 
 /**

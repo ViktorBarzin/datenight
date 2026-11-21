@@ -56,7 +56,13 @@ const SKIP_TEXT: Record<string, string> = {
 
 function Week() {
 	const queryClient = useQueryClient();
-	const home = useQuery({ queryKey: homeKeys.all, queryFn: () => getHome() });
+	const home = useQuery({
+		queryKey: homeKeys.all,
+		queryFn: () => getHome(),
+		// While a job runs, look again every 10 s for its outcome.
+		refetchInterval: (q) =>
+			q.state.data?.runs.some((r) => r.outcome === "running") ? 10_000 : false,
+	});
 	const refresh = () =>
 		queryClient.invalidateQueries({ queryKey: homeKeys.all });
 	const make = useMutation({
@@ -185,9 +191,9 @@ function Week() {
 					</span>
 				}
 			>
-				{job.isPending ? (
+				{job.data ? (
 					<p className="text-sm text-muted-foreground">
-						Running. A scout run takes a few minutes.
+						Started. A scout run takes a few minutes; its result shows below.
 					</p>
 				) : null}
 				{job.isError ? (
@@ -195,7 +201,6 @@ function Week() {
 						{String(job.error.message)}
 					</p>
 				) : null}
-				{job.data ? <p className="text-sm">{job.data}</p> : null}
 				<p className="text-sm">{openIdeas} open ideas to draw from.</p>
 				<ul className="flex flex-wrap gap-2 text-xs">
 					{Object.entries(setup).map(([name, ok]) => (
