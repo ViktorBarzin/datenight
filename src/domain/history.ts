@@ -4,6 +4,7 @@
  * many evening photos. The Owner confirms each one, so the rules here only
  * decide what is worth asking about.
  */
+import { addDays, type Interval, londonDate, londonTime } from "./evening";
 
 export interface EventEvidence {
 	on: string;
@@ -124,4 +125,21 @@ export function candidatesFrom(input: {
 			venueGuess: entry.venue ?? "",
 			evidence: entry.evidence,
 		}));
+}
+
+/**
+ * London days whose evening (18:00 to 23:00) a trip segment touches. Those
+ * evenings were not London dates, so their evidence is left out.
+ */
+export function awayDays(trips: readonly Interval[]): Set<string> {
+	const out = new Set<string>();
+	for (const trip of trips) {
+		const last = londonDate(trip.end);
+		for (let day = londonDate(trip.start); day <= last; day = addDays(day, 1)) {
+			const from = londonTime(day, "18:00");
+			const to = londonTime(day, "23:00");
+			if (trip.start < to && from < trip.end) out.add(day);
+		}
+	}
+	return out;
 }

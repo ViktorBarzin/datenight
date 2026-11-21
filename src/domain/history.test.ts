@@ -1,6 +1,11 @@
 import { describe, expect, test } from "bun:test";
 
-import { candidatesFrom, isSpendCandidate, venueFromSummary } from "./history";
+import {
+	awayDays,
+	candidatesFrom,
+	isSpendCandidate,
+	venueFromSummary,
+} from "./history";
 
 describe("venueFromSummary", () => {
 	test.each([
@@ -100,5 +105,34 @@ describe("candidatesFrom", () => {
 			photoDays: [],
 		});
 		expect(out.map((c) => c.on)).toEqual(["2026-02-01", "2026-01-01"]);
+	});
+});
+
+describe("awayDays", () => {
+	test("every London day a trip touches in the evening", () => {
+		const days = awayDays([
+			{
+				start: new Date("2026-11-02T06:15:00Z"),
+				end: new Date("2026-11-02T19:00:00Z"),
+			},
+			{
+				start: new Date("2026-11-03T00:00:00Z"),
+				end: new Date("2026-11-05T00:00:00Z"),
+			},
+		]);
+		expect([...days].sort()).toEqual([
+			"2026-11-02",
+			"2026-11-03",
+			"2026-11-04",
+		]);
+	});
+	test("a morning flight home leaves that evening in London", () => {
+		const days = awayDays([
+			{
+				start: new Date("2026-11-15T02:00:00Z"),
+				end: new Date("2026-11-15T09:00:00Z"),
+			},
+		]);
+		expect([...days]).toEqual([]);
 	});
 });

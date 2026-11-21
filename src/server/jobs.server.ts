@@ -5,10 +5,10 @@
  */
 
 import { getLogger } from "@viktorbarzin/log";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 
 import { addDays, londonDate, londonTime, mondayOf } from "#/domain/evening";
-import { candidatesFrom } from "#/domain/history";
+import { awayDays, candidatesFrom } from "#/domain/history";
 import { historyCandidates, jobRuns } from "./db/schema.server";
 import type { Db } from "./db.server";
 import { type Deps, NotConfigured } from "./deps.server";
@@ -102,9 +102,21 @@ export async function refreshHistory(db: Db, deps: Deps): Promise<string> {
 	const photoDays = immich ? await eveningPhotoDays(immich, historySince) : [];
 	parts.push(`photo days ${immich ? photoDays.length : "not set up"}`);
 
+	const away = awayDays(await deps.trips());
+	parts.push(`${away.size} evenings away`);
 	const found = candidatesFrom({ events, spends, photoDays }).filter(
-		(c) => c.on < londonDate(until),
+		(c) => c.on < londonDate(until) && !away.has(c.on),
 	);
+	// Undecided days that turned out to be trips leave the list.
+	if (away.size > 0)
+		await db
+			.delete(historyCandidates)
+			.where(
+				and(
+					eq(historyCandidates.status, "pending"),
+					inArray(historyCandidates.on, [...away]),
+				),
+			);
 	for (const c of found) {
 		await db
 			.insert(historyCandidates)
