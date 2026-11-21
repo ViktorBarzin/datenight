@@ -7,7 +7,12 @@
 import { getLogger } from "@viktorbarzin/log";
 import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 
-import { MAX_PHOTOS, needsCopy, photoCandidates } from "#/domain/photos";
+import {
+	MAX_PHOTOS,
+	needsCopy,
+	photoCandidates,
+	photoKey,
+} from "#/domain/photos";
 import { ideas, storedPhotos } from "./db/schema.server";
 import type { Db } from "./db.server";
 import type { Deps } from "./deps.server";
@@ -168,7 +173,8 @@ export async function findPhotos(
 		const html = await pageHtml(deps, page);
 		if (!html) continue;
 		for (const c of photoCandidates(html, page))
-			if (!candidates.includes(c)) candidates.push(c);
+			if (!candidates.some((k) => photoKey(k) === photoKey(c)))
+				candidates.push(c);
 	}
 	for (const url of candidates) {
 		if (out.length >= MAX_PHOTOS) break;

@@ -70,6 +70,31 @@ function jsonLdImages(value: unknown, out: string[], depth = 0): void {
 	}
 }
 
+/**
+ * One photo's identity across the sizes and formats a site serves it in:
+ * the host and path without the query, the extension, size segments such as
+ * /1920/1080/, or suffixes such as -optimised, -scaled or -1200x800.
+ */
+export function photoKey(url: string): string {
+	let u: URL;
+	try {
+		u = new URL(url);
+	} catch {
+		return url;
+	}
+	const path = u.pathname
+		.toLowerCase()
+		.replace(/\/\d{2,4}\/\d{2,4}(?=\/)/g, "")
+		.replace(/\.[a-z0-9]{2,5}$/, "")
+		.replace(
+			/(@\dx|[-_](optimi[sz]ed|scaled|large|medium|small|thumb(nail)?|\d{2,4}x\d{2,4}))+$/,
+			"",
+		);
+	return `${u.hostname}${path}`;
+}
+
+const PERSON_HINT = /(author|avatar|profile|headshot|byline|gravatar)/i;
+
 function usable(url: string): boolean {
 	if (!/^https?:\/\//i.test(url)) return false;
 	if (SKIP_EXT.test(url)) return false;
@@ -121,6 +146,10 @@ export function photoCandidates(html: string, pageUrl: string): string[] {
 
 	for (const m of html.matchAll(/<(img|source)\b[^>]*>/gi)) {
 		const tag = m[0];
+		if (
+			PERSON_HINT.test(`${attr(tag, "class") ?? ""} ${attr(tag, "alt") ?? ""}`)
+		)
+			continue;
 		const width = Number.parseInt(attr(tag, "width") ?? "", 10);
 		const height = Number.parseInt(attr(tag, "height") ?? "", 10);
 		if (
@@ -149,7 +178,7 @@ export function photoCandidates(html: string, pageUrl: string): string[] {
 			continue;
 		}
 		if (!usable(absolute)) continue;
-		const key = absolute.replace(/[?#].*$/, "");
+		const key = photoKey(absolute);
 		if (seen.has(key)) continue;
 		seen.add(key);
 		out.push(absolute);

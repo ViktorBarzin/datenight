@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { MAX_PHOTOS, needsCopy, photoCandidates } from "./photos";
+import { MAX_PHOTOS, needsCopy, photoCandidates, photoKey } from "./photos";
 
 const page = `<!doctype html><html><head>
 <meta property="og:image" content="https://cdn.example.com/hero.jpg?w=1200">
@@ -66,6 +66,26 @@ describe("photoCandidates", () => {
 		]);
 	});
 
+	test("the same photo in several sizes counts once", () => {
+		const html = `<meta property="og:image" content="https://s.example/uploads/Elf-Taste-Film-optimised.png">
+<img src="https://s.example/uploads/Elf-Taste-Film.png">
+<img src="https://media.example/images/105558937/image.jpg">
+<img src="https://media.example/images/105558937/1920/1080/image.webp">
+<img src="https://cdn.example/photo-1200x800.jpg"><img src="https://cdn.example/photo-scaled.jpg">`;
+		expect(photoCandidates(html, "https://p.example")).toEqual([
+			"https://s.example/uploads/Elf-Taste-Film-optimised.png",
+			"https://media.example/images/105558937/image.jpg",
+			"https://cdn.example/photo-1200x800.jpg",
+		]);
+	});
+
+	test("an author's headshot or a profile picture stays out", () => {
+		const html = `<img src="/u/Scarlett-optimised.png" class="author-image"><img src="/u/me.jpg" alt="Profile photo of Sam"><img src="/u/room.jpg" alt="The dining room">`;
+		expect(photoCandidates(html, "https://p.example")).toEqual([
+			"https://p.example/u/room.jpg",
+		]);
+	});
+
 	test("an empty or broken page gives nothing", () => {
 		expect(photoCandidates("", "https://x.example")).toEqual([]);
 		expect(
@@ -74,6 +94,20 @@ describe("photoCandidates", () => {
 				"https://x.example",
 			),
 		).toEqual([]);
+	});
+});
+
+describe("photoKey", () => {
+	test("ignores size, format and resizer parts of a link", () => {
+		expect(photoKey("https://a.example/x/Elf-optimised.png?w=1")).toBe(
+			photoKey("https://a.example/x/Elf.jpg"),
+		);
+		expect(photoKey("https://a.example/i/1/1920/1080/image.webp")).toBe(
+			photoKey("https://a.example/i/1/image.jpg"),
+		);
+		expect(photoKey("https://a.example/room.jpg")).not.toBe(
+			photoKey("https://a.example/bar.jpg"),
+		);
 	});
 });
 
