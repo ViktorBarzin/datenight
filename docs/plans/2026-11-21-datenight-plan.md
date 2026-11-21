@@ -1,7 +1,9 @@
 ---
-status: draft
+status: done
 plan: true
 ---
+
+> Built 2026-11-21. This is the plan as approved. Where it and `docs/adr/` differ, the ADRs describe the app as built: for example, the scout runs from the pod's own scheduler (ADR 0008) with a $3 cap (ADR 0003).
 
 # Date Night: a private app that finds one new London date a week
 
@@ -157,7 +159,7 @@ left_out:
 ## How a week runs
 
 1. Sunday 20:00: the app starts the date-scout agent. The agent reads the listing sites and returns new ideas with price, area and link.
-2. The app drops each repeat and scores the rest on taste, novelty, budget and distance from Clerkenwell.
+2. The app drops each repeat and scores the rest on taste, novelty, budget and distance from home.
 3. The app finds a free evening in the next week. A trip in TripIt or the calendar makes it a skipped week.
 4. Monday 09:00: Muse gets the shortlist and the evening from the app.
 5. Muse checks availability in its browser. Muse replaces an idea that has no table or ticket.

@@ -8,257 +8,85 @@
 > HTTP endpoints are server routes (`createFileRoute(...)({ server: { handlers } })`).
 > If you catch yourself writing a Next.js pattern, load the skills below first.
 
-`datenight` is built on the default app stack (ADR-0001, in app-kit at `docs/adr/0001-default-app-stack.md`):
-TanStack Start on Bun, Drizzle on the shared CNPG Postgres, Authentik
-accounts through app-side OIDC, realtime over Postgres LISTEN/NOTIFY and SSE.
-The shared plumbing lives in the `@viktorbarzin/*` packages (table below);
-this repo holds only what is specific to the app. Every push to `master`
-builds and deploys: on Cloud, Cloud builds and deploys it (see "On Cloud");
-elsewhere, this repo's own CI files under `.github/` and `.woodpecker/` do.
-So land only verified work there.
+`datenight` is Date Night: a private app that finds the Owner one new London
+date a week. It keeps the Ideas, the Past dates and the taste; Meta's Muse runs
+the weekly routine on WhatsApp and books the Idea the Owner picks. It is built
+on the default app stack (app-kit ADR-0001): TanStack Start on Bun, Drizzle on
+the shared CNPG Postgres, Authentik sign-in through app-side OIDC, realtime
+over Postgres LISTEN/NOTIFY and SSE. Every push to `master` builds and
+deploys, so land only verified work there.
 
-## On Cloud
+## Read first
 
-This app may run on Cloud, which builds and deploys it on every push and
-sets `CLOUD_EDGE_SECRET`; the app then runs in cloud mode. Cloud handles
-sign-in, the database and the deploy, so you write only the business logic:
-routes in `src/routes/`, tables in `src/server/db/schema.server.ts`, server
-functions in `src/server/*.functions.ts`. Leave `src/server/auth.server.ts`,
-`env.server.ts`, `db.server.ts`, `src/start.ts` and the `Dockerfile` as they
-are, except where this section says otherwise.
+- `GLOSSARY.md` holds the domain words (Idea, Repeat, Shortlist, Deck,
+  Surprise hold...). Use them, with their meaning there, in code, tests,
+  commits and docs.
+- `docs/adr/` holds the decisions. Read the ADR for an area before you change
+  it, and add one when a change is hard to reverse, surprising and a real
+  trade-off:
 
-- **Identity.** Cloud's edge signs people in. In a server function, call
-  `requireMember(getRequest())` from `auth.server.ts` (it wraps
-  `appAuth.requireUser()`): it returns the user (`sub`, `username`, `email`)
-  or throws 401. Key a person's own data on `user.sub`; data every member
-  shares has no owner column (see "Shared data"). `appAuth.resolveUser()`
-  returns null for a signed-out visitor instead of throwing.
-- **Admin.** The Project owner (`CLOUD_OWNER_EMAIL`) is the admin:
-  `user.admin` is true, and `appAuth.requireAdmin(user)` guards admin
-  actions. Put admin tools on `/admin`. To add admins, keep them in your own
-  table and pass `isAdmin` in `auth.server.ts`:
-  `createCloudAuth(() => ({ ...cloudAuthConfig(), isAdmin: (who) => ... }))`.
-- **Public or private.** A public App lets anyone open its pages; signed-out
-  visitors have no user, so decide what they see. The home page
-  (`src/routes/index.tsx`) shows a signed-out visitor a landing page with a
-  "Sign in" link and answers 200; to show such a visitor more, extend that
-  page, and keep their data behind `requireMember`. A private App lets in
-  only the people on its allow list: its edge sends a signed-out page load
-  to sign-in before it reaches the App, so the landing page never shows
-  there. Cloud sets this, not the code.
-- **Internal.** An internal App has no address outside Cloud and no
-  sign-in. Only the Apps of its Project that list it in `connects` reach
-  it, at the URL in their `CLOUD_URL_<NAME>`. Their calls carry no user, so
-  `requireMember` answers 401: serve what they need on routes that need no
-  user. To call an internal App from this one, read its URL from
-  `CLOUD_URL_<NAME>` on the server.
-- **Dependency updates.** If Renovate is on for the repo (`cloud new`
-  turns it on), it opens one pull request a week on `renovate/all` with
-  every update, majors too. Cloud builds it without deploying it and sets
-  the commit status `cloud/build`; Renovate merges it once every status
-  on it is success, and the merge deploys like any push. Leave that branch to
-  Renovate. Keep `bun run check`, the typecheck and the build green, since a
-  failing build holds every update back. List a package in `ignoreDeps` in
-  `renovate.json` to hold it back; `cloud renovate disable <project> <app>`
-  turns Renovate off.
-- **Two 401s.** A 401 with `sign_in_required` comes from Cloud's edge (a
-  private App and no sign-in); a 401 with `unauthorized` comes from this
-  app's own code (`requireMember` with no user).
-- **Invites.** The owner lets someone into a private App with `cloud invite
-  <project> <app> <email>`. Each run makes a new single-use code for 7 days;
-  older codes stay valid until used or expired, since Cloud cannot revoke
-  them. A redeemed old code only makes a Cloud App Guests account, which
-  opens no App unless its email is on that App's allow list.
-- **Secrets.** Keep keys and passwords out of the repo and the Project
-  File. Set one from stdin, never as an argument:
-  `printf %s "$VALUE" | cloud secrets set <project> <app> STRIPE_KEY`, or
-  a whole file with `cloud secrets import <project> <app> < .env` (one
-  change, one restart). Over MCP, use `set_secret`. It arrives as an env
-  variable after the App restarts, in about a minute; `cloud secrets list`
-  shows names and status, never values. For a value no person needs, such
-  as a session or signing key, write `SESSION_SECRET: {generate: true}` in
-  the App's `env` in the Project File: Cloud makes 32 random bytes once,
-  keeps them on every apply and never shows them. Read it in
-  `env.server.ts` like any other variable.
-- **Access Tokens for CI.** `cloud tokens create --expires 30d` (after
-  `cloud login`) prints a token for `CLOUD_TOKEN`. Every token expires, 90
-  days at most, and nothing extends it.
-- **No access requests and no bearer tokens.** `/pending` and
-  `/admin/requests` redirect. `/api` routes work from the signed-in browser
-  only.
-- **Env at build time.** Plain env reaches the build; secrets never do.
-  The App's `env` in the Project File is set on the pod and passed to the
-  build, so `vite build` inlines `import.meta.env.VITE_*` values into the
-  page's JS (for example `env: {VITE_GREETING: hi}`). Anyone who opens the
-  page can read those, so never put a secret in a `VITE_*` name. Secrets
-  (`cloud secrets`, and `{generate: true}` values) reach the running App
-  only. The `Dockerfile` reads the
-  build env from `CLOUD_BUILD_ENV`; keep that line. A Dockerfile of your
-  own gets each plain value where it declares `ARG NAME`. Cloud leaves
-  these names out of the build, though the App still gets them at run
-  time: `PATH`, `LD_*`, `DOCKER_*`, `BUILDX_*`, `BUILDKIT_*`, the proxy
-  names (`HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY`, `ALL_PROXY`),
-  `NODE_OPTIONS`, `BUN_*` and `RAILPACK_CONFIG_FILE`, in any case.
-- **Build logs.** `cloud deploys <project> <app>` shows why a Deploy
-  failed and the last 20 lines of its build; `cloud deploys log <project>
-  <app> <deploy-id>` prints the whole build.
-- **Migrations.** `bun run db:generate` writes them to `drizzle/`; commit
-  them. Once per Deploy, before the new version starts, Cloud runs
-  `entrypoints/migrate.js` from the image as a Job, which applies them. If
-  it fails, the Deploy fails, the version before keeps serving, and
-  `cloud deploys log <project> <app> <deploy-id>` ends with its output.
-  Keep them additive (see Database).
-- **One-off jobs.** `cloud run <project> <app> -- <command>` runs a
-  command once with the live version's image, env and secrets, prints its
-  output and exits with its exit code; `cloud jobs <project> <app>` lists
-  them. The command runs with no shell and at most 1 hour, one at a time
-  per Project, and cannot call an internal App. Bundle a script as
-  `migrate.ts` is (`build:entrypoints`), and it runs as
-  `cloud run <project> <app> -- bun entrypoints/<name>.js`. It
-  opens 1 database connection that the Plan does not count.
-- **Shell and SQL.** `cloud shell <project> <app>` opens `sh` in a running
-  instance (the image's busybox gives `env`, `ls`, `cat`, `grep`, `ps`, `cut`,
-  `head`, `tail`),
-  and `cloud psql <project> <postgres>` opens psql as the Postgres's own
-  role; `-c '<sql>'` runs one SQL text. Piped stdin runs as a script and
-  the command exits with its exit code; `--json` prints one document. Only
-  the owner opens one, at most 1 hour, closed after 15 minutes idle; each
-  is a `shell` or `psql` change. Changes made in a shell are lost when the
-  instance is replaced: put them in code and deploy.
-- **Health check.** `cloud new` sets `healthCheckPath: /healthz` in the
-  Project File, and `src/routes/healthz.ts` answers it. Cloud asks it on
-  PORT every 10 s: a Deploy goes live only once it answers 2xx, and an
-  instance that fails it for 60 s is restarted. Keep `/healthz` fast and
-  free of database calls, so a slow database never restarts a working
-  App. `cloud events <project> <app>` lists when the App crashed (with its
-  exit code, or `OOMKilled`), failed the check, or recovered;
-  `cloud projects` names an App that is crashing now. To hear about it by
-  email or signed webhook, add a channel:
-  `cloud notifications channels add email <address>` or
-  `... add webhook <url>` (`cloud help notifications`).
-- **Instances.** `instances: 2` (or 3) on the App in the Project File
-  runs that many copies, each counted against the Budget at the App's
-  Size. Each request goes to one of them, so keep state in Postgres,
-  never in memory. Each reads its id in `CLOUD_INSTANCE_ID`, and
-  `cloud logs` shows its last 5 characters on each line.
-- **Network and limits.** No email from the app: Cloud blocks TCP 25,
-  465, 587 and 2525. The app reaches the internet over IPv4 only, from one
-  shared address (`cloud help apps`). A request has 125 seconds to start
-  its answer and a body of at most 100 MiB; a stream needs a message every
-  30 seconds (`cloud help limits`).
-- **Files.** Nothing on disk lasts: `/tmp` (512 MiB) is wiped at every
-  Deploy and restart, and each instance has its own. Keep files in a
-  Bucket: add `files: {kind: bucket, size: small}` to the Project File's
-  services and `files` to the App's `connects`. Cloud sets `S3_ENDPOINT`,
-  `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY_ID` and `S3_SECRET_ACCESS_KEY`
-  (and `CLOUD_S3_*_<NAME>` for each Bucket when there are several).
-  `bucket()` in `src/server/bucket.server.ts` gives the S3 client, or null
-  without a Bucket. The store has no public address: the App takes every
-  upload and serves every download, as streams (`putStream`,
-  `getStream`), never a whole file in memory. A request body is at most
-  100 MiB. A write past the Size's quota fails with S3 code
-  `AccessDenied`. app-kit's `docs/stack.md` ("Files on Cloud") has a
-  streaming upload and download route.
-- **Background work.** A pg-boss worker or a cron job runs from this
-  App's image as a `worker` or `cron` Service in the Project File, with an
-  argv `command` such as `[bun, entrypoints/worker.js]` and its pool sized
-  to `CLOUD_DATABASE_POOL_SIZE`. Read "Workers and cron jobs on Cloud" in
-  app-kit's `docs/stack.md` before you add one.
-- **Connections.** The pod's pool is `CLOUD_DATABASE_POOL_SIZE`, plus one
-  LISTEN connection for realtime. A nano Postgres (5 connections) holds
-  this App and one worker or cron at pool 1; with both, or with 2
-  instances, give the Postgres `size: small` (`cloud help limits`). Where
-  realtime is off (no pool size and a connection limit below 4), lists
-  refetch every `app.pollMs`; invalidate the query after a write, as
-  `routes/index.tsx` does.
-- **Backups.** Cloud dumps the Postgres every night and keeps the dumps
-  14 days. `cloud pg backup` takes one now and `cloud pg backups` lists
-  them; `cloud pg restore ... --backup <id> --into <new>` restores one
-  into a new Postgres, never into this one; `cloud pg export ... -o
-  db.dump` writes a `pg_dump` to a file. `cloud pg rotate` gives the
-  Postgres a new password and restarts the App with it. The template
-  reads `DATABASE_URL` at start, so it needs no change (`cloud help
-  postgres`).
-- **Deleting.** `cloud projects delete <project>` stops the Project; for
-  7 days `cloud projects restore <project>` brings it back with its
-  database, then Cloud deletes it for good (`--purge` does that at once).
-  Never delete a Project to retry a failed apply: apply the file again.
-- **Deploys.** Cloud deploys each push to `master` within seconds (a
-  Forgejo push webhook, which `cloud new` adds). To push without a
-  Deploy, put `[skip cloud]` in the commit message. `cloud deploy
-  <project> <app>` deploys the branch head by hand, `--commit <sha>` one
-  commit; `autoDeploy: false` on the App in the Project File stops push
-  Deploys. `cloud deploy cancel <project> <app> <id>` stops a build, and
-  `cloud deploy-hook <project> <app>` prints a secret URL a POST to which
-  deploys. Keep that URL out of the repo.
-- **Project File in the repo.** After `cloud sync enable <project> --repo
-  <this repo's URL>`, `cloud.yaml` at the repo root is the Project File:
-  each commit that changes it is applied within 2 minutes, `cloud apply`
-  is refused, and a Service you remove from it keeps running until `cloud
-  changes confirm <id>`. A commit that changes only `cloud.yaml` still
-  deploys the App, unless its message holds `[skip cloud]`. `cloud sync
-  status <project>` shows the last commit applied and any error.
-- **Test locally first.** Each push costs build minutes. Before you push,
-  start a throwaway Postgres (README, "Run locally"), install the test
-  browser once with `bunx playwright install chromium-headless-shell`, and
-  run
-  `bun run check && bun run build && bun run typecheck && TEST_DATABASE_URL=<admin url> bun run test && TEST_DATABASE_URL=<admin url> bun run test:e2e`.
-  Build before typecheck: `vite build` writes `src/routeTree.gen.ts`, and
-  `tsc` fails on a new route file until it does. The cloud-mode tests need
-  the build and the database; without them they are skipped. A run with
-  skipped tests is not done. If the browser install or a test fails with
-  `ENOSPC`, the temp directory is full: set `TMPDIR` to a directory under
-  `$HOME` (`mkdir -p ~/.cache/tmp && export TMPDIR=~/.cache/tmp`) and run it
-  again.
+  | ADR | Area |
+  |---|---|
+  | 0001 | Muse drives the week; the app never messages or books |
+  | 0002 | runs in the cluster on the infra path, not on Cloud |
+  | 0003 | the scout and link agents in claude-agent-service |
+  | 0004 | Instagram and TikTok read anonymously with yt-dlp |
+  | 0005 | what counts as a Repeat |
+  | 0006 | Past dates proposed from evidence, confirmed by the Owner |
+  | 0007 | the Partner learns of a date only from the Surprise hold |
+  | 0008 | background jobs in the web pod, claimed in `job_runs` |
+  | 0009 | photos hotlinked; Instagram and TikTok images copied |
+  | 0010 | Muse's bearer token and the public brief |
+  | 0011 | swipes: a Pass is final, one refill a day |
 
-<!-- cloud:begin -->
-<!-- Cloud replaces this block with this App's facts. -->
-<!-- cloud:end -->
+- `README.md` maps each part of the app to its files.
 
-## Replacing the example
+## Rules of this repo
 
-The template ships an example, `items`: each person's own list on the home
-page, with its "New item" field, `src/server/items.functions.ts` and `items.server.ts`, the
-`/api/items` route, the `items` table and `itemKeys` in
-`src/lib/query-keys.ts`. Replace it with the app's own data, but keep the
-tests that check the plumbing passing, pointed at the new code:
+- **Public repo, private people.** Only the Owner is named. The Partner's
+  name, email and the home position live in Vault `secret/datenight` and
+  reach the code as settings (`dateNightSettings()`). Tests, fixtures,
+  commits, the Muse brief and every page outside sign-in use made-up or
+  role names.
+- **Rules are pure, and tested first.** `src/domain/` holds the rules
+  (repeats, ranking, the Date evening, history, photos, iCalendar) with no
+  database and no I/O. Write the failing `bun test` there before the change.
+- **Outside calls go through `Deps`** (`src/server/deps.server.ts`): the
+  calendar, TripIt, the Noticing File, geocoding, page fetches and the link
+  reader. Server tests pass a fake `Deps`
+  (`fake()` in `flow.server.test.ts`), so no test reaches a live site.
+- **Every setting is optional.** A missing one throws `NotConfigured`, and
+  the page or job reports what is not set up. A new setting is an infra
+  change too (ADR 0002).
+- **Budget live agent runs.** A scout run costs minutes and up to $3, a link
+  read up to $1 (ADR 0003). Start one at a time, from the app's own buttons
+  or a real link, and read the outcome before the next.
+- **Muse's API is a contract.** Change `/api/muse/*` additively. When the
+  routine changes, update `src/server/brief.server.ts`, then tell Muse to
+  read `/muse/brief` again with `homelab delegate muse "<message>"`. The
+  Muse token stays in Vault and out of every chat.
+- **The Surprise hold** holds the time, the area and the dress code, never
+  the venue, the booking reference or a link (ADR 0007).
 
-- `e2e/auth.spec.ts` (sign-in, access requests), `e2e/realtime.spec.ts`
-  (fan-out to another tab, the resync after a missed event) and
-  `e2e/cloud.spec.ts` (cloud mode) drive the home page through the "New
-  item" label and the `items` and `no-items` test ids. Give the new main
-  page a label and test ids of its own and use them there. These tests
-  expect a fresh user to see an empty list; for shared data, wait for the
-  list to finish loading instead (a test id on the list's container, which
-  is there whether it is empty or not), since other tests' rows are there.
-- `/silent-item` in `e2e/stack.ts` writes a row behind the app's back for
-  the resync test. Make it insert into the new table.
-- `src/server/http.server.test.ts`, `cloud.server.test.ts` and
-  `cloud-realtime.server.test.ts` call `/api/items` to check the 401 and
-  403 paths, CSRF, framing, bearer tokens and the connection pool. Point
-  them at an `/api` route of the new app, and change `known` in
-  `src/start.ts` to list it.
-- Then delete `/api/items`, `items.functions.ts`, `items.server.ts`,
-  `items.server.test.ts` and `itemKeys`, so no dead example is left.
-- Migrations, in two steps. First add the new table to `schema.server.ts`
-  and run `bun run db:generate`: that writes its `CREATE TABLE` migration.
-  Only then drop the `items` table and run `bun run db:generate` again for
-  the `DROP TABLE` migration. With an add and a drop in one generate,
-  drizzle-kit asks whether the new table renames the old one; with no
-  terminal (an agent's shell) that prompt crashes, and drizzle-kit has no
-  flag to answer it. Under the additive rule (Database), push the drop after
-  the new version runs, or with it while the app has no users yet.
+## Live app
 
-**Shared data.** The example is per person: `listItems` filters on
-`ownerSub`, and `addItem` publishes to the writer's own topic. For a list
-every member sees (a family's shopping list), leave the owner filter out and
-publish to `null`, which reaches every open stream (see Realtime). Published
-to `user.sub`, other members' tabs never see the write while realtime is
-on, because lists then do not poll. "Every member" means everyone who gets
-past sign-in: on a private App, the people on its allow list; on a public
-App, anyone with a homelab account. Keep family-only data in a private App.
+| Task | How |
+|---|---|
+| Land a change | `homelab work start <topic>`, then `homelab work land --verify-cmd "<the line in Commands>"` |
+| Wait for the deploy | GitHub Actions builds, then Woodpecker (repo 546) deploys: `homelab deploy wait datenight/datenight` |
+| Settings and secrets | infra `stacks/datenight/main.tf`, Vault `secret/datenight` |
+| The scout and link agents | claude-agent-service: `app/datenight_scout.py`, `app/datenight_link.py`, `agents/date-*.md` |
+| A broken pod | `homelab k8s debug datenight` |
+| Job outcomes | "Behind the scenes" on the home page, or the `job_runs` table; Loki alert `DateNightJobFailed` |
+| See a page as the Owner | `homelab browser as <owner> --format playwright`, then `homelab browser as --end <owner>`; always name the user |
+| Read live data | `kubectl -n dbaas exec <primary pod> -c postgres -- psql -d datenight -tAc "<select>"`; claim with `presence` before a write |
 
-Run the full line in "Test locally first" before the push.
+- **jsonb reads in SQL.** The jsonb columns (`photos`, `evidence`...) hold
+  a JSON string, encoded twice by the driver. The app's own reads are right;
+  in hand-written SQL, read them with `col #>> '{}'`.
+- **Real side effects.** A booking posted to `/api/muse/bookings` writes to
+  the Owner's calendar and invites the Partner. Test the booking flow
+  against fakes, never against the live app.
 
 ## Load the TanStack skills before you write Start or Router code
 
@@ -309,8 +137,8 @@ calling it done.
   and speak seroval, so CLIs, agents and Home Assistant cannot call them.
 - Anything a non-browser client calls is a server route under `/api` with a
   zod schema (`readJson`/`readQuery` from `@viktorbarzin/runtime`) and
-  `appAuth.handleApi` for identity. Bearer tokens work there, except on
-  Cloud.
+  `appAuth.handleApi` for identity. `/api/muse/*` checks Muse's own token
+  instead (ADR 0010).
 - The validator method in Start 1.169 is `.validator()`, not
   `.inputValidator()` (older docs and model memory use the latter).
 - `src/routeTree.gen.ts` is generated by `vite build` / `vite dev` and is
@@ -332,8 +160,9 @@ calling it done.
 | `@viktorbarzin/telemetry` | the Rybbit script (pageviews, replay), product events, Sentry init | `components/telemetry.tsx`, `routes/__root.tsx`, `nitro-plugin.server.ts` |
 
 Only `src/server/env.server.ts` reads `process.env`. It maps the Terraform
-app module's env contract, or Cloud's `CLOUD_*` contract, onto the package
-configs.
+app module's env contract onto the package configs. The template's Cloud
+paths (`CLOUD_*`, `createCloudAuth`, `bucket.server.ts`, `e2e/cloud.spec.ts`)
+stay for its tests and never run here (ADR 0002).
 
 The packages keep TanStack Start out of their dependencies: they take a
 `Request` and return a `Response` or data, and this app wires them into
@@ -362,9 +191,9 @@ To opt out for good, set `telemetry.enabled: false` in `src/app.config.ts`.
   production hosts in `app.telemetry.productionHosts`, so local dev sends
   nothing. Pageviews and replay need no code.
 - Product events are `noun.past_verb` with snake_case property keys:
-  `track("item.created", { item_id })` from `@viktorbarzin/telemetry/browser`
+  `track("idea.liked", { idea_id })` from `@viktorbarzin/telemetry/browser`
   in components, or `track({ event, properties, userId })` from
-  `@viktorbarzin/telemetry/server` in server code (see `items.functions.ts`).
+  `@viktorbarzin/telemetry/server` in server code. The app sends none yet.
   Both drop events the pipeline would reject; the server logs why.
 - Sign-in reloads the page, and `components/telemetry.tsx` then identifies
   the person by their `sub`. Call `reset()` from the browser entry on
@@ -374,7 +203,7 @@ To opt out for good, set `telemetry.enabled: false` in `src/app.config.ts`.
   to a logger are snake_case.
 - Access lines (`request`, with the path and status) cover only `/api/*`
   routes (`observeRequest` in `src/start.ts`). Server functions and page
-  loads log only errors and what the code logs, so `cloud logs` shows no
+  loads log only errors and what the code logs, so the pod's logs show no
   line for them. To see a failing server function there, log it yourself
   inside the handler after `requireMember`, whose request context tags the
   line with the person.
@@ -383,34 +212,20 @@ To opt out for good, set `telemetry.enabled: false` in `src/app.config.ts`.
 
 - Connection budget: 5 per pod on a shared primary. The pool takes 4
   (`APP_POOL_MAX`), the realtime LISTEN connection 1; the migrate init
-  container uses 1 more while it runs. On Cloud the pool is
-  `CLOUD_DATABASE_POOL_SIZE` plus the LISTEN connection
-  (`connectionBudget()` in `env.server.ts`). Cloud counts each instance
-  twice (during a rollout the old pods keep their connections until they
-  stop), plus each worker and cron on the database, and refuses a Plan
-  that does not fit (`cloud help limits`). A nano Postgres holds 1
-  instance and one worker or cron at pool 1; a small one holds 2
-  instances, a worker and a cron at pool 1. Without it the pod gets half of
-  `CLOUD_DATABASE_CONNECTION_LIMIT`. On Cloud, more instances, a worker
-  or a cron is self-service: add it to the Project File and run `cloud
-  plan`. The Plan checks every process against the Size's connections,
-  refuses one that does not fit and names the Size that holds it, so
-  there is no one to ask. A worker or cron job opens
-  `CLOUD_DATABASE_POOL_SIZE` connections (see On Cloud). Off Cloud, on a
-  homelab deploy with a fixed budget of 5 per pod, more replicas or a
-  CronJob multiply this, so ask the infra owner before adding either.
+  container uses 1 more while it runs. More replicas or a CronJob multiply
+  this, so ask Viktor before adding either; background work runs in
+  the web pod instead (ADR 0008).
 - Migrations are additive: expand in one release, contract in a later one, so
-  the previous image stays a working rollback.
+  the previous image stays a working rollback. `bun run db:generate` writes
+  them to `drizzle/`; the init container applies them under
+  `pg_advisory_lock`.
 - The same rule covers server functions. A tab opened before a deploy keeps
   running the old client: it calls the old server function by its name and
   input, and reads the return shape it was built for, until it reloads. A
   renamed or removed function logs `Server function info not found` on the
   server, and a changed return shape breaks the old page (for example
   `data.map is not a function`). Add the new function or field first, and
-  remove the old one in a later release. `bun run db:generate` writes
-  them to `drizzle/`; the init container applies them under
-  `pg_advisory_lock` (on Cloud, the migrate Job of each Deploy; see On
-  Cloud).
+  remove the old one in a later release.
 - The identity tables come from `@viktorbarzin/auth/schema`. A change there is
   a major version of that package and needs a regenerated migration here.
 
@@ -420,8 +235,8 @@ A write that other tabs should see publishes inside its own transaction:
 
 ```ts
 await db.transaction(async (tx) => {
-	await tx.insert(items).values(...);
-	await realtime.publishInTx(tx, ownerSub, { type: "invalidate", keys: [itemKeys.all], source });
+	await tx.update(ideas).set(...);
+	await realtime.publishInTx(tx, null, { type: "invalidate", keys: [ideaKeys.all], source });
 });
 ```
 
@@ -433,7 +248,8 @@ that every member sees; a write published to the writer's topic never
 reaches the other members' tabs. The client hook (`useRealtimeInvalidation`)
 invalidates those keys in every tab but the one that wrote, and refetches
 every active query after a reconnect or `resync`. Payloads name keys, never
-data, and stay under 7,900 bytes.
+data, and stay under 7,900 bytes. Date Night has one member, so it publishes
+to `null` (`ideasChanged` in `app.functions.ts`).
 
 ## Commands
 
@@ -459,3 +275,17 @@ To run it locally against a database (README, "Run locally"):
 `DATABASE_URL=... DEV_USER=<name> PORT=<free port> bun run dev`. `DEV_USER`
 stands in for sign-in only when `NODE_ENV` is `development` or `test` and no
 OIDC client is configured.
+
+The full check before `homelab work land`, against a throwaway Postgres
+(`docker run -d --rm -e POSTGRES_PASSWORD=dev -p 127.0.0.1:5433:5432
+postgres:18`), is its `--verify-cmd`:
+
+```sh
+bun run check && bun run build && bun run typecheck && TEST_DATABASE_URL=postgres://postgres:dev@127.0.0.1:5433/postgres bun run test && TEST_DATABASE_URL=postgres://postgres:dev@127.0.0.1:5433/postgres bun run test:e2e
+```
+
+Build before typecheck: `vite build` writes `src/routeTree.gen.ts`. Without
+`TEST_DATABASE_URL` the database tests are skipped, and a run with skipped
+tests is not done. The browser tests need `bunx playwright install
+chromium-headless-shell` once; on `ENOSPC`, set `TMPDIR` to a directory
+under `$HOME`. Remove the Postgres container after.
