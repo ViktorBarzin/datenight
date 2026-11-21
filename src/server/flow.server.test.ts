@@ -145,6 +145,16 @@ describe.skipIf(!adminUrl)("the weekly flow", () => {
 		expect(again.ideas.map((i) => i.id)).toEqual(week.ideas.map((i) => i.id));
 	});
 
+	test("a week asked for before any ideas exist picks again once ideas arrive", async () => {
+		const f = fake();
+		const empty = await currentWeek(db, f.deps);
+		expect(empty.status).toBe("exhausted");
+		await addIdeas(db, f.deps, [idea("Kiln")], "scout");
+		const later = await currentWeek(db, f.deps);
+		expect(later.status).toBe("offered");
+		expect(later.ideas.map((i) => i.venue)).toEqual(["Kiln"]);
+	});
+
 	test("a trip makes a skipped week", async () => {
 		const f = fake();
 		f.trips = [

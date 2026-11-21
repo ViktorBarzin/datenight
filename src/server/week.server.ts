@@ -142,6 +142,23 @@ export async function weekRow(
 export async function currentWeek(db: Db, deps: Deps): Promise<WeekView> {
 	const weekStart = nextWeekMonday(deps.now());
 	const existing = await weekRow(db, weekStart);
+	// A week made while the catalogue was empty gets a first pick once ideas exist.
+	if (
+		existing?.status === "exhausted" &&
+		existing.round === 0 &&
+		existing.offeredIds.length === 0 &&
+		existing.eveningDate
+	) {
+		const ids = await pick(db, deps, existing.eveningDate, []);
+		if (ids.length > 0) {
+			await db
+				.update(shortlists)
+				.set({ ideaIds: ids, offeredIds: ids, status: "offered" })
+				.where(eq(shortlists.weekStart, weekStart));
+			const refreshed = await weekRow(db, weekStart);
+			if (refreshed) return view(db, refreshed);
+		}
+	}
 	if (existing) return view(db, existing);
 
 	const from = londonTime(weekStart, "00:00");
