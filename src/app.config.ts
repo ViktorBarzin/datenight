@@ -3,14 +3,14 @@
  * the environment. `bun run rename <slug> "<Display Name>"` rewrites them.
  */
 export const app = {
-	slug: "starter",
-	displayName: "Starter",
+	slug: "datenight",
+	displayName: "Date Night",
 	/** Authentik groups (the Terraform app module creates them). */
-	usersGroup: "Starter Users",
-	adminsGroup: "Starter Admins",
-	agentsGroup: "Starter Agents",
+	usersGroup: "Date Night Users",
+	adminsGroup: "Date Night Admins",
+	agentsGroup: "Date Night Agents",
 	/** The Postgres NOTIFY channel for realtime events. */
-	realtimeChannel: "starter_events",
+	realtimeChannel: "datenight_events",
 	/** How often lists refetch while realtime is off (a connection budget of 1, e.g. Cloud's nano). */
 	pollMs: 10_000,
 	/**
@@ -26,6 +26,6 @@ export const app = {
 		/** The browser sends only from this domain and its subdomains. */
 		productionHosts: ["viktorbarzin.me"],
 	},
-	/** migrationLockKey("starter") from @viktorbarzin/pg. */
-	migrationLockKey: -410644299707373464n,
+	/** migrationLockKey("datenight") from @viktorbarzin/pg. */
+	migrationLockKey: 634438020951230246n,
 } as const;

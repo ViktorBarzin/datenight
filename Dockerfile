@@ -1,6 +1,6 @@
 # Build context: the repository root.
 #
-#   docker build -t starter:local .
+#   docker build -t datenight:local .
 #
 # Runs the Nitro server by default. The migrate entrypoint runs from the same
 # image with args ["entrypoints/migrate.js"]: on Cloud as a Job once per
