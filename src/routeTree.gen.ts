@@ -23,6 +23,7 @@ import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiAuthFinishRouteImport } from './routes/api/auth/finish'
 import { Route as ApiAuthStartRouteImport } from './routes/api/auth/start'
 import { Route as ApiMuseSplatRouteImport } from './routes/api/muse/$'
+import { Route as ApiPhotosIdRouteImport } from './routes/api/photos/$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -94,6 +95,11 @@ const ApiMuseSplatRoute = ApiMuseSplatRouteImport.update({
   path: '/api/muse/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPhotosIdRoute = ApiPhotosIdRouteImport.update({
+  id: '/api/photos/$id',
+  path: '/api/photos/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -110,6 +116,7 @@ export interface FileRoutesByFullPath {
   '/api/auth/finish': typeof ApiAuthFinishRoute
   '/api/auth/start': typeof ApiAuthStartRoute
   '/api/muse/$': typeof ApiMuseSplatRoute
+  '/api/photos/$id': typeof ApiPhotosIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -126,6 +133,7 @@ export interface FileRoutesByTo {
   '/api/auth/finish': typeof ApiAuthFinishRoute
   '/api/auth/start': typeof ApiAuthStartRoute
   '/api/muse/$': typeof ApiMuseSplatRoute
+  '/api/photos/$id': typeof ApiPhotosIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -143,6 +151,7 @@ export interface FileRoutesById {
   '/api/auth/finish': typeof ApiAuthFinishRoute
   '/api/auth/start': typeof ApiAuthStartRoute
   '/api/muse/$': typeof ApiMuseSplatRoute
+  '/api/photos/$id': typeof ApiPhotosIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -161,6 +170,7 @@ export interface FileRouteTypes {
     | '/api/auth/finish'
     | '/api/auth/start'
     | '/api/muse/$'
+    | '/api/photos/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -177,6 +187,7 @@ export interface FileRouteTypes {
     | '/api/auth/finish'
     | '/api/auth/start'
     | '/api/muse/$'
+    | '/api/photos/$id'
   id:
     | '__root__'
     | '/'
@@ -193,6 +204,7 @@ export interface FileRouteTypes {
     | '/api/auth/finish'
     | '/api/auth/start'
     | '/api/muse/$'
+    | '/api/photos/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -210,6 +222,7 @@ export interface RootRouteChildren {
   ApiAuthFinishRoute: typeof ApiAuthFinishRoute
   ApiAuthStartRoute: typeof ApiAuthStartRoute
   ApiMuseSplatRoute: typeof ApiMuseSplatRoute
+  ApiPhotosIdRoute: typeof ApiPhotosIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -312,6 +325,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiMuseSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/photos/$id': {
+      id: '/api/photos/$id'
+      path: '/api/photos/$id'
+      fullPath: '/api/photos/$id'
+      preLoaderRoute: typeof ApiPhotosIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -330,6 +350,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthFinishRoute: ApiAuthFinishRoute,
   ApiAuthStartRoute: ApiAuthStartRoute,
   ApiMuseSplatRoute: ApiMuseSplatRoute,
+  ApiPhotosIdRoute: ApiPhotosIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

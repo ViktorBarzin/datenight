@@ -33,10 +33,10 @@ your own secret store. Never write it into a chat.
    When one has no table or ticket, \`POST ${api}/week/replace\` with
    \`{"idea_id": "<id>"}\` and check the idea that replaces it. At most 6
    replacements a week.
-5. Send Viktor one WhatsApp message: the evening's date, then the three
-   ideas numbered 1 to 3, each with title, venue, area, price for two, the
-   one-line why and the link. Mark a splurge. Ask him to reply 1, 2, 3 or
-   "none".
+5. Send Viktor the three ideas on WhatsApp, numbered 1 to 3: for each, title,
+   venue, area, price for two, the one-line why and the link, and attach its
+   first one or two \`photos\` (image links; a link under ${api}/photos/ needs
+   the token). Mark a splurge. Then ask him to reply 1, 2, 3 or "none".
 
 ## 2. When Viktor replies
 
@@ -68,13 +68,14 @@ liked, or that it did not happen. Then \`POST ${api}/dates/<id>/rating\` with
 
 ## 4. Any time
 
-- **Viktor forwards a link to save** (a reel, a tip, an article): read it,
-  then \`POST ${api}/ideas\` with \`{"title", "venue", "category"\` (one of
-  \`shows\`, \`food\`, \`classes\`, \`active\`), \`"activity_kind"\` (what it is,
-  such as "pottery class"), \`"price_gbp_for_two"\` (or null), \`"area"\`,
-  \`"postcode"\`, \`"url"\`, \`"booking_url"\`, \`"description"\`, \`"ends_on"\`
-  (YYYY-MM-DD for a dated event, or null)\`}\`. Reply with the \`outcome\`:
-  \`saved\`, \`already_known\` or \`repeat\` (they did it before).
+- **Viktor forwards or pastes a link** (an Instagram or TikTok post, an
+  article, a venue page): \`POST ${api}/links\` with
+  \`{"url": "<the link>", "note": "<what Viktor said, plus any caption or
+  preview text you can see>"}\`. The app reads it into an idea in a minute or
+  two. Reply that you are on it, then \`GET ${api}/links/<id>\` every minute
+  until \`status\` is \`done\`, \`not_found\` or \`failed\`, and tell Viktor
+  what it became (\`ideaTitle\`) or why not (\`reason\`). You do not need to
+  read the post yourself.
 - **Viktor asks for a past favourite**: \`GET ${api}/favourites\` and offer
   one. Favourites never come back on their own.
 

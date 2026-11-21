@@ -33,6 +33,13 @@ import {
 	setIdeaStatus,
 } from "./ideas.server";
 import { recentRuns, runNow } from "./jobs.server";
+import {
+	addLink,
+	type LinkView,
+	processLink,
+	recentLinks,
+	retryLink,
+} from "./links.server";
 import { realtime } from "./realtime.server";
 import {
 	currentWeek,
@@ -240,4 +247,43 @@ export const cancelDate = createServerFn({ method: "POST" })
 	.handler(async ({ data }): Promise<DateView> => {
 		await requireMember(getRequest());
 		return cancel(pool.getDb(), liveDeps(), data.id);
+	});
+
+/** Paste a link: it is read into an Idea in the background. */
+export const submitLink = createServerFn({ method: "POST" })
+	.validator(
+		z.object({
+			url: z.string().trim().min(1).max(4000),
+			note: z.string().trim().max(1000),
+		}),
+	)
+	.handler(async ({ data }): Promise<LinkView> => {
+		await requireMember(getRequest());
+		const db = pool.getDb();
+		const deps = liveDeps();
+		const link = await addLink(db, {
+			url: data.url,
+			note: data.note,
+			via: "app",
+		});
+		if (link.status === "pending" && deps.settings.link)
+			void processLink(db, deps, link.id).catch(() => {});
+		return link;
+	});
+
+export const getLinks = createServerFn({ method: "GET" }).handler(
+	async (): Promise<LinkView[]> => {
+		await requireMember(getRequest());
+		return recentLinks(pool.getDb(), 10);
+	},
+);
+
+export const tryLinkAgain = createServerFn({ method: "POST" })
+	.validator(z.object({ id: z.string().uuid() }))
+	.handler(async ({ data }): Promise<void> => {
+		await requireMember(getRequest());
+		const db = pool.getDb();
+		const deps = liveDeps();
+		await retryLink(db, data.id);
+		if (deps.settings.link) void processLink(db, deps, data.id).catch(() => {});
 	});

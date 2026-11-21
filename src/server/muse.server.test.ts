@@ -9,6 +9,7 @@ function deps(museToken: string | null): Deps {
 		settings: {
 			museToken,
 			scout: null,
+			link: null,
 			caldav: null,
 			owner: null,
 			partner: null,
@@ -25,6 +26,10 @@ function deps(museToken: string | null): Deps {
 		putEvent: async () => {},
 		deleteEvent: async () => {},
 		geocode: async () => new Map(),
+		fetch: async () => new Response("not found", { status: 404 }),
+		readLink: async () => {
+			throw new Error("no link reader in this test");
+		},
 	};
 }
 

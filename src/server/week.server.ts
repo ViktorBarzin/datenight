@@ -43,6 +43,8 @@ export interface IdeaView {
 	why: string;
 	saved: boolean;
 	endsOn: string | null;
+	/** Outside image links, or /api/photos/<id> for copies the app keeps. */
+	photos: string[];
 }
 
 export function ideaView(row: IdeaRow): IdeaView {
@@ -62,6 +64,7 @@ export function ideaView(row: IdeaRow): IdeaView {
 		why: row.why,
 		saved: row.source === "saved",
 		endsOn: row.endsOn,
+		photos: row.photos ?? [],
 	};
 }
 

@@ -5,6 +5,7 @@
  * previous image stays a working rollback.
  */
 import {
+	customType,
 	date,
 	doublePrecision,
 	index,
@@ -60,6 +61,11 @@ export const ideas = pgTable(
 		rejections: integer("rejections").notNull().default(0),
 		/** The last day the Idea can happen, for dated events. */
 		endsOn: date("ends_on", { mode: "string" }),
+		/**
+		 * Photo links, best first: an outside image URL, or /api/photos/<id> for
+		 * a copy the app keeps. null until the photo crawl has looked.
+		 */
+		photos: jsonb("photos").$type<string[]>(),
 		/** Normalised venue and title, so a scout run never adds the same Idea twice. */
 		dedupeKey: text("dedupe_key").notNull(),
 		createdAt: created(),
@@ -155,7 +161,45 @@ export const jobRuns = pgTable(
 	(t) => [primaryKey({ columns: [t.name, t.periodKey] })],
 );
 
+const bytea = customType<{
+	data: Uint8Array<ArrayBuffer>;
+	driverData: Uint8Array<ArrayBuffer>;
+}>({
+	dataType: () => "bytea",
+});
+
+/** A copy of a photo whose outside link expires (Instagram, TikTok). */
+export const storedPhotos = pgTable("stored_photos", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	contentType: varchar("content_type", { length: 64 }).notNull(),
+	bytes: bytea("bytes").notNull(),
+	sourceUrl: text("source_url").notNull(),
+	createdAt: created(),
+});
+
+/** A link the Owner sent in, and what came of it. */
+export const savedLinks = pgTable(
+	"saved_links",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		url: text("url").notNull(),
+		note: text("note").notNull().default(""),
+		/** app | muse */
+		via: varchar("via", { length: 16 }).notNull(),
+		/** pending | reading | done | not_found | failed */
+		status: varchar("status", { length: 16 }).notNull().default("pending"),
+		ideaId: uuid("idea_id").references(() => ideas.id),
+		/** Why it was not found or failed, in words. */
+		reason: text("reason").notNull().default(""),
+		attempts: integer("attempts").notNull().default(0),
+		createdAt: created(),
+		finishedAt: timestamp("finished_at", { withTimezone: true, mode: "date" }),
+	},
+	(t) => [index("saved_links_status_idx").on(t.status)],
+);
+
 export type IdeaRow = typeof ideas.$inferSelect;
 export type DateRow = typeof dates.$inferSelect;
 export type ShortlistRow = typeof shortlists.$inferSelect;
 export type HistoryCandidateRow = typeof historyCandidates.$inferSelect;
+export type SavedLinkRow = typeof savedLinks.$inferSelect;

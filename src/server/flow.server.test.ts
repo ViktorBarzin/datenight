@@ -72,6 +72,7 @@ function fake(): Fake {
 			settings: {
 				museToken: "t",
 				scout: null,
+				link: null,
 				caldav: null,
 				owner: { name: "Owner", email: "owner@example.com" },
 				partner: { name: "Partner", email: "partner@example.com" },
@@ -92,6 +93,10 @@ function fake(): Fake {
 				events.delete(uid);
 			},
 			geocode: async () => new Map(),
+			fetch: async () => new Response("not found", { status: 404 }),
+			readLink: async () => {
+				throw new Error("no link reader in this test");
+			},
 		},
 	};
 	return f;

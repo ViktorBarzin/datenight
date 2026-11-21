@@ -12,6 +12,7 @@ on WhatsApp and books the Idea the Owner picks
 | The rules: repeats, ranking, the Date evening, history, iCalendar | `src/domain/` (pure, unit-tested) |
 | Ideas, the Shortlist, Dates, jobs | `src/server/{ideas,week,dates,jobs}.server.ts` |
 | Calendar, TripIt, Actual Budget, Immich, the scout, postcodes | `src/server/integrations/` |
+| Links the Owner sends in, and photos for each Idea | `src/server/{links,photos}.server.ts`, `src/domain/photos.ts` |
 | The API Muse calls, and its brief | `src/server/muse.server.ts`, `/muse/brief` |
 | Settings, all optional | `dateNightSettings()` in `src/server/env.server.ts` |
 
@@ -19,6 +20,12 @@ Every Sunday the pod refreshes history at 19:00 and runs the scout at 20:00
 London time (`SCHEDULER=on`). The scout is the `date-scout` agent in
 claude-agent-service (`POST /v1/datenight/scout`). The first `GET
 /api/muse/week` of a week makes its Shortlist.
+
+A link pasted on the Ideas page, or forwarded to Muse (`POST /api/muse/links`),
+goes to the `date-link` agent (`POST /v1/datenight/link`), which reads an
+Instagram or TikTok post with yt-dlp and finds the venue. Every scheduler tick
+finds up to 8 photos for a few Ideas from their pages; Instagram and TikTok
+images expire, so the app keeps copies of those in `stored_photos`.
 
 Built on the default app stack (app-kit ADR-0001): TanStack Start on Bun,
 Drizzle on the shared Postgres, Authentik sign-in through app-side OIDC,

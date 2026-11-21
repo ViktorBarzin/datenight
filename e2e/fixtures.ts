@@ -48,7 +48,7 @@ export async function signedInPage(
 
 /** Save an idea through the Ideas page's form; the page must be on /ideas. */
 export async function saveIdeaVia(page: Page, title: string): Promise<void> {
-	await page.getByRole("button", { name: "Save an idea" }).click();
+	await page.getByRole("button", { name: "Add by hand" }).click();
 	await page.getByLabel("What it is").fill(title);
 	await page.getByLabel("Venue").fill(title);
 	await page

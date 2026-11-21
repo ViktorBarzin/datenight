@@ -10,6 +10,7 @@ import {
 	noticingTodos,
 	putEvent,
 } from "./integrations/caldav.server";
+import { type LinkAnswer, readLink } from "./integrations/link.server";
 import { geocodePostcodes, tripIntervals } from "./integrations/sources.server";
 
 export interface Deps {
@@ -26,6 +27,10 @@ export interface Deps {
 	geocode: (
 		postcodes: readonly string[],
 	) => Promise<Map<string, { lat: number; lon: number }>>;
+	/** Outside HTTP for pages and photos; tests pass a fake. */
+	fetch: (url: string, init?: RequestInit) => Promise<Response>;
+	/** Turn a link into an idea, through the agent service. */
+	readLink: (url: string, note: string) => Promise<LinkAnswer>;
 }
 
 export class NotConfigured extends Error {
@@ -63,5 +68,10 @@ export function liveDeps(): Deps {
 			await deleteEvent(caldav, uid);
 		},
 		geocode: geocodePostcodes,
+		fetch: (url, init) => fetch(url, init),
+		readLink: async (url, note) => {
+			if (!settings.link) throw new NotConfigured("the link reader");
+			return readLink(settings.link, url, note);
+		},
 	};
 }

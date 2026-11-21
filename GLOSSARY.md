@@ -67,8 +67,12 @@ The weekly search of London listing sites that adds new Ideas.
 _Avoid_: crawl, scrape, refresh
 
 **Saved idea**:
-An Idea the Owner found and sent in, such as a reel, a tip from a friend or an article.
+An Idea the Owner found and sent in, usually as a Saved link.
 _Avoid_: bookmark, manual idea
+
+**Saved link**:
+A link the Owner pasted or forwarded, such as an Instagram or TikTok post, an article or a venue page, that the app reads into a Saved idea.
+_Avoid_: share, bookmark
 
 **Surprise hold**:
 The calendar invitation the Partner gets for a Date: the time, the rough area and the dress code, never the venue.

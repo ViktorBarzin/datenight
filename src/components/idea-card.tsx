@@ -1,5 +1,6 @@
 import { CATEGORY_LABELS, isCategory } from "#/domain/types";
 import type { IdeaView } from "#/server/week.server";
+import { Gallery } from "./gallery";
 import { CATEGORY_TINT, pounds } from "./shell";
 
 /** One Idea, as the Shortlist and the Ideas page show it. */
@@ -20,6 +21,7 @@ export function IdeaCard({
 			className="flex flex-col gap-2 rounded-lg border bg-white/70 p-4 dark:bg-white/5 shadow-[0_1px_0_rgba(0,0,0,0.03)]"
 			data-testid="idea"
 		>
+			<Gallery photos={idea.photos} title={idea.title} />
 			<div className="flex flex-wrap items-center gap-2 text-xs">
 				{index !== undefined ? (
 					<span className="flex size-6 items-center justify-center rounded-full bg-primary font-semibold text-primary-foreground">

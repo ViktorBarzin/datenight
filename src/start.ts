@@ -9,7 +9,14 @@ import { raiseIdleTimeout } from "#/server/request-idle.server";
 
 const accessLog = getLogger(`${app.slug}.http`);
 const label = createHandlerLabeler({
-	known: ["/api/ideas", "/api/muse", "/api/events", "/healthz", "/muse/brief"],
+	known: [
+		"/api/ideas",
+		"/api/muse",
+		"/api/photos",
+		"/api/events",
+		"/healthz",
+		"/muse/brief",
+	],
 });
 
 /**

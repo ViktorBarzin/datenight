@@ -290,6 +290,8 @@ export interface DateNightSettings {
 	/** Bearer token Muse sends on /api/muse/*. */
 	museToken: string | null;
 	scout: { url: string; token: string } | null;
+	/** claude-agent-service's link route; it shares the scout's token. */
+	link: { url: string; token: string } | null;
 	caldav: {
 		baseUrl: string;
 		user: string;
@@ -318,6 +320,11 @@ export function dateNightSettings(): DateNightSettings {
 		museToken: secret("MUSE_TOKEN"),
 		scout: (() => {
 			const url = env("SCOUT_URL");
+			const token = secret("SCOUT_TOKEN");
+			return url && token ? { url, token } : null;
+		})(),
+		link: (() => {
+			const url = env("LINK_URL");
 			const token = secret("SCOUT_TOKEN");
 			return url && token ? { url, token } : null;
 		})(),

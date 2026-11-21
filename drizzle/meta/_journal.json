@@ -22,6 +22,13 @@
       "when": 1795270918260,
       "tag": "0002_massive_pet_avengers",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1795276992789,
+      "tag": "0003_familiar_frog_thor",
+      "breakpoints": true
     }
   ]
 }

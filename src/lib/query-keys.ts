@@ -14,3 +14,7 @@ export const ideaKeys = {
 export const historyKeys = {
 	all: ["history"] as const,
 };
+
+export const linkKeys = {
+	all: ["links"] as const,
+};

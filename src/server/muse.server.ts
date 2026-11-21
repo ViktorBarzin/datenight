@@ -25,12 +25,16 @@ import {
 } from "./dates.server";
 import { pool } from "./db.server";
 import { type Deps, liveDeps, NotConfigured } from "./deps.server";
+import { publicOrigin } from "./env.server";
 import { addIdeas } from "./ideas.server";
+import { addLink, LinkInputError, linkById, processLink } from "./links.server";
+import { PHOTO_PREFIX, storedPhoto } from "./photos.server";
 import {
 	currentWeek,
 	nextRound,
 	replaceIdea,
 	WeekStateError,
+	type WeekView,
 } from "./week.server";
 
 const log = getLogger("datenight.muse");
@@ -45,6 +49,10 @@ const respond = createErrorResponder({
 		(err) =>
 			err instanceof WeekStateError
 				? errorResponse(409, "conflict", err.message)
+				: null,
+		(err) =>
+			err instanceof LinkInputError
+				? errorResponse(400, "bad_request", err.message)
 				: null,
 		(err) =>
 			err instanceof NotConfigured
@@ -98,6 +106,27 @@ const savedIdeaSchema = z.object({
 		.default(null),
 });
 
+/** Photo links Muse can fetch: a kept copy is served under /api/muse/photos. */
+function museWeek(week: WeekView): WeekView {
+	const origin = publicOrigin();
+	return {
+		...week,
+		ideas: week.ideas.map((i) => ({
+			...i,
+			photos: i.photos.map((p) =>
+				p.startsWith(PHOTO_PREFIX)
+					? `${origin}/api/muse/photos/${p.slice(PHOTO_PREFIX.length)}`
+					: p,
+			),
+		})),
+	};
+}
+
+const linkSchema = z.object({
+	url: z.string().trim().min(1).max(4000),
+	note: z.string().trim().max(1000).default(""),
+});
+
 type Handler = (
 	request: Request,
 	deps: Deps,
@@ -106,23 +135,68 @@ type Handler = (
 
 const routes: { method: string; pattern: RegExp; handler: Handler }[] = [
 	{
+		method: "POST",
+		pattern: /^links$/,
+		handler: async (request, deps) => {
+			if (!deps.settings.link) throw new NotConfigured("the link reader");
+			const body = await readJson(request, linkSchema);
+			const db = pool.getDb();
+			const link = await addLink(db, {
+				url: body.url,
+				note: body.note,
+				via: "muse",
+			});
+			// Reading takes a minute or two; Muse asks again with GET links/<id>.
+			if (link.status === "pending")
+				void processLink(db, deps, link.id).catch(() => {});
+			return Response.json(link, { status: 202 });
+		},
+	},
+	{
+		method: "GET",
+		pattern: /^links\/([^/]+)$/,
+		handler: async (_r, _deps, [id = ""]) => {
+			const linkId = idSchema.parse(id);
+			const link = await linkById(pool.getDb(), linkId);
+			if (!link) throw new ApiError(404, "not_found", "no link with that id");
+			return Response.json(link);
+		},
+	},
+	{
+		method: "GET",
+		pattern: /^photos\/([^/]+)$/,
+		handler: async (_r, _deps, [id = ""]) => {
+			const photoId = idSchema.parse(id);
+			const photo = await storedPhoto(pool.getDb(), photoId);
+			if (!photo) throw new ApiError(404, "not_found", "no photo with that id");
+			return new Response(photo.bytes, {
+				headers: {
+					"content-type": photo.contentType,
+					"cache-control": "private, max-age=31536000, immutable",
+				},
+			});
+		},
+	},
+	{
 		method: "GET",
 		pattern: /^week$/,
 		handler: async (_r, deps) =>
-			Response.json(await currentWeek(pool.getDb(), deps)),
+			Response.json(museWeek(await currentWeek(pool.getDb(), deps))),
 	},
 	{
 		method: "POST",
 		pattern: /^week\/next$/,
 		handler: async (_r, deps) =>
-			Response.json(await nextRound(pool.getDb(), deps)),
+			Response.json(museWeek(await nextRound(pool.getDb(), deps))),
 	},
 	{
 		method: "POST",
 		pattern: /^week\/replace$/,
 		handler: async (request, deps) => {
 			const body = await readJson(request, z.object({ idea_id: idSchema }));
-			return Response.json(await replaceIdea(pool.getDb(), deps, body.idea_id));
+			return Response.json(
+				museWeek(await replaceIdea(pool.getDb(), deps, body.idea_id)),
+			);
 		},
 	},
 	{

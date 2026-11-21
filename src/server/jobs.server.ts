@@ -16,6 +16,8 @@ import { addIdeas, fromScout } from "./ideas.server";
 import { calendarEvents } from "./integrations/caldav.server";
 import { runScout } from "./integrations/scout.server";
 import { eveningPhotoDays, spendSince } from "./integrations/sources.server";
+import { processPending } from "./links.server";
+import { fillPhotos } from "./photos.server";
 
 const log = getLogger("datenight.jobs");
 
@@ -165,7 +167,8 @@ export async function runNow(
 /**
  * One scheduler tick. On Sunday from 19:00 London time the history refresh
  * runs, and from 20:00 the Scout run, once per week each. A Monday morning
- * tick catches up a run the pod missed.
+ * tick catches up a run the pod missed. Every tick also reads waiting links
+ * and finds photos for a few Ideas.
  */
 export async function tick(db: Db, deps: Deps): Promise<void> {
 	const now = deps.now();
@@ -187,6 +190,10 @@ export async function tick(db: Db, deps: Deps): Promise<void> {
 			() => {},
 		);
 	}
+	// Every tick: links sent in that are still waiting, and photos for a few
+	// Ideas never looked at (new scout finds fill in over the next hour).
+	if (deps.settings.link) await processPending(db, deps);
+	await fillPhotos(db, deps, 6);
 }
 
 export async function recentRuns(db: Db, limit: number) {
